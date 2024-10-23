@@ -1,4 +1,4 @@
-# WebSocket Library in C++11
+# WebSocket Library
 
 ## Overview
 
