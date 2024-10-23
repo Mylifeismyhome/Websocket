@@ -117,6 +117,10 @@ c_byte_stream::c_byte_stream()
 c_byte_stream::c_byte_stream( const c_byte_stream &other )
 {
     impl = new impl_t();
+    
+    std::lock( impl->mutex, other.impl->mutex );
+    std::lock_guard< std::recursive_mutex > lhs_lock( impl->mutex, std::adopt_lock );
+    std::lock_guard< std::recursive_mutex > rhs_lock( other.impl->mutex, std::adopt_lock );
 
     impl->container = other.impl->container;
 }
@@ -129,8 +133,6 @@ c_byte_stream::operator=( const c_byte_stream &other )
         return *this;
     }
 
-    impl = new impl_t();
-
     std::lock( impl->mutex, other.impl->mutex );
     std::lock_guard< std::recursive_mutex > lhs_lock( impl->mutex, std::adopt_lock );
     std::lock_guard< std::recursive_mutex > rhs_lock( other.impl->mutex, std::adopt_lock );
@@ -142,9 +144,8 @@ c_byte_stream::operator=( const c_byte_stream &other )
 
 c_byte_stream::c_byte_stream( c_byte_stream &&other ) noexcept
 {
-    impl = new impl_t();
-
-    impl->container = std::move( other.impl->container );
+    impl = other.impl;
+    other.impl = nullptr;
 }
 
 c_byte_stream &
@@ -155,22 +156,19 @@ c_byte_stream::operator=( c_byte_stream &&other ) noexcept
         return *this;
     }
 
-    impl = new impl_t();
-
-    std::lock( impl->mutex, other.impl->mutex );
-    std::lock_guard< std::recursive_mutex > lhs_lock( impl->mutex, std::adopt_lock );
-    std::lock_guard< std::recursive_mutex > rhs_lock( other.impl->mutex, std::adopt_lock );
-
-    impl->container = std::move( other.impl->container );
+    impl = other.impl;
+    other.impl = nullptr;
 
     return *this;
 }
 
 c_byte_stream::~c_byte_stream()
 {
-    close();
-
-    delete impl;
+    if ( impl )
+    {
+        delete impl;
+        impl = nullptr;
+    }
 }
 
 c_byte_stream &

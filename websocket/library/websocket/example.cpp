@@ -150,7 +150,7 @@ main()
     }
 #endif
 
-    std::signal( SIGINT, exit_handler );
+    /*  std::signal( SIGINT, exit_handler );*/
 
     ws_settings_init( &settings );
 
@@ -230,25 +230,25 @@ main()
 
     websocket_destroy( ctx );
 #else
-    if ( ws.on( WS_EVENT_OPEN, reinterpret_cast< void * >( websocket_on_open ) ) == e_ws_status::error )
+    if ( ws.on( WS_EVENT_OPEN, reinterpret_cast< void * >( websocket_on_open ) ) == e_ws_status::status_error )
     {
         ws_settings_destroy( &settings );
         return 1;
     }
 
-    if ( ws.on( WS_EVENT_CLOSE, reinterpret_cast< void * >( websocket_on_close ) ) == e_ws_status::error )
+    if ( ws.on( WS_EVENT_CLOSE, reinterpret_cast< void * >( websocket_on_close ) ) == e_ws_status::status_error )
     {
         ws_settings_destroy( &settings );
         return 1;
     }
 
-    if ( ws.on( WS_EVENT_FRAME, reinterpret_cast< void * >( websocket_on_frame ) ) == e_ws_status::error )
+    if ( ws.on( WS_EVENT_FRAME, reinterpret_cast< void * >( websocket_on_frame ) ) == e_ws_status::status_error )
     {
         ws_settings_destroy( &settings );
         return 1;
     }
 
-    if ( ws.on( WS_EVENT_ERROR, reinterpret_cast< void * >( websocket_on_error ) ) == e_ws_status::error )
+    if ( ws.on( WS_EVENT_ERROR, reinterpret_cast< void * >( websocket_on_error ) ) == e_ws_status::status_error )
     {
         ws_settings_destroy( &settings );
         return 1;
@@ -261,13 +261,13 @@ main()
     }
 
 #ifdef WEBSOCKET_EXAMPLE_ENDPOINT_SERVER
-    if ( ws.bind( "localhost", "4433", nullptr ) == e_ws_status::error )
+    if ( ws.bind( "localhost", "4433", nullptr ) == e_ws_status::status_error )
     {
         ws_settings_destroy( &settings );
         return 1;
     }
 #elif WEBSOCKET_EXAMPLE_ENDPOINT_CLIENT
-    if ( ws.open( "localhost", "4433", nullptr ) == e_ws_status::error )
+    if ( ws.open( "localhost", "4433", nullptr ) == e_ws_status::status_error )
     {
         ws_settings_destroy( &settings );
         return 1;

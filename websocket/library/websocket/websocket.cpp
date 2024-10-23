@@ -96,6 +96,14 @@ struct network_stream_t
 
     void
     close();
+
+    network_stream_t() {
+
+    }
+
+    ~network_stream_t() {
+        close();
+    }
 };
 
 enum class e_file_descriptor_type : unsigned char
@@ -245,6 +253,7 @@ struct c_websocket::impl_t
 
     ~impl_t()
     {
+        fd_map.clear();
     }
 };
 

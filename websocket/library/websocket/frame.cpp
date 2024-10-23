@@ -67,19 +67,21 @@ c_ws_frame::c_ws_frame()
 c_ws_frame::c_ws_frame( e_ws_frame_opcode opcode )
 {
     impl = new impl_t();
-
     impl->opcode = opcode;
 }
 
 c_ws_frame::~c_ws_frame()
 {
-    delete impl;
+    if ( impl )
+    {
+        delete impl;
+        impl = nullptr;
+    }
 }
 
 c_ws_frame::c_ws_frame( const c_ws_frame &other )
 {
     impl = new impl_t();
-
     impl->opcode = other.impl->opcode;
     std::memcpy( impl->key, other.impl->key, sizeof( impl->key ) );
     impl->payload = other.impl->payload;
@@ -87,11 +89,8 @@ c_ws_frame::c_ws_frame( const c_ws_frame &other )
 
 c_ws_frame::c_ws_frame( c_ws_frame &&other ) noexcept
 {
-    impl = new impl_t();
-
-    impl->opcode = other.impl->opcode;
-    std::memcpy( impl->key, other.impl->key, sizeof( impl->key ) );
-    impl->payload = std::move( other.impl->payload );
+    impl = other.impl;
+    other.impl = nullptr;
 }
 
 c_ws_frame &
@@ -101,8 +100,6 @@ c_ws_frame::operator=( const c_ws_frame &other )
     {
         return *this;
     }
-
-    impl = new impl_t();
 
     impl->opcode = other.impl->opcode;
     std::memcpy( impl->key, other.impl->key, sizeof( impl->key ) );
@@ -119,11 +116,8 @@ c_ws_frame::operator=( c_ws_frame &&other ) noexcept
         return *this;
     }
 
-    impl = new impl_t();
-
-    impl->opcode = other.impl->opcode;
-    std::memcpy( impl->key, other.impl->key, sizeof( impl->key ) );
-    impl->payload = std::move( other.impl->payload );
+    impl = other.impl;
+    other.impl = nullptr;
 
     return *this;
 }
