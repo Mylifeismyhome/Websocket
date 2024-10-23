@@ -399,3 +399,5 @@ FodyWeavers.xsd
 
 # DoxyGen
 doc/
+
+test.html
