@@ -804,6 +804,7 @@ c_websocket::impl_t::communicate( file_descriptor_context *ctx )
                                     case e_ws_frame_opcode::opcode_binary:
                                     {
                                         std::thread( &c_websocket::impl_t::async_ws_frame, this, ctx->net.fd, std::move( ctx->frame ) ).detach();
+                                        ctx->frame = {};
                                         break;
                                     }
 

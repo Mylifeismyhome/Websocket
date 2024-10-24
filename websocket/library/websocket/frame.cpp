@@ -32,6 +32,31 @@ SOFTWARE.
 #include <cstring>
 #include <memory>
 
+union ws_frame_byte1_t
+{
+    unsigned char value;
+
+    struct
+    {
+        e_ws_frame_opcode opcode : 4;
+        bool rsv3 : 1;
+        bool rsv2 : 1;
+        bool rsv1 : 1;
+        bool fin : 1;
+    } bits;
+};
+
+union ws_frame_byte2_t
+{
+    unsigned char value;
+
+    struct
+    {
+        unsigned char payload_length : 7;
+        bool mask : 1;
+    } bits;
+};
+
 struct c_ws_frame::impl_t
 {
     e_ws_frame_opcode opcode;
@@ -205,19 +230,7 @@ c_ws_frame::read( c_byte_stream *input )
 
     e_ws_frame_status status = c_ws_frame::impl_t::decode( input, &impl->payload, out_opcode );
 
-    switch ( out_opcode )
-    {
-        case e_ws_frame_opcode::opcode_text:
-        case e_ws_frame_opcode::opcode_binary:
-        case e_ws_frame_opcode::opcode_close:
-        case e_ws_frame_opcode::opcode_ping:
-        case e_ws_frame_opcode::opcode_pong:
-            impl->opcode = out_opcode;
-            break;
-
-        default:
-            break;
-    }
+    impl->opcode = out_opcode;
 
     return status;
 }
@@ -236,72 +249,68 @@ c_ws_frame::impl_t::encode( e_ws_frame_opcode opcode, bool mask, unsigned char *
     {
         c_byte_stream fragment;
 
-        unsigned char byte1 = 0x0, byte2 = 0x0;
+        ws_frame_byte1_t byte1;
 
-        const bool fin = ( size <= CHUNK_SIZE );
-        const unsigned char rsv1 = 0x0; // < extension, used to indicate compression
-        const unsigned char rsv2 = 0x0; // < not in use yet.
-        const unsigned char rsv3 = 0x0; // < not in use yet.
-        const e_ws_frame_opcode fragment_opcode = ( offset == 0 ? opcode : e_ws_frame_opcode::opcode_continuation );
+        byte1.bits.fin = ( size <= CHUNK_SIZE );
+        byte1.bits.rsv1 = 0x0; // < extension, used to indicate compression
+        byte1.bits.rsv2 = 0x0; // < not in use yet.
+        byte1.bits.rsv3 = 0x0; // < not in use yet.
+        byte1.bits.opcode = ( offset == 0 ? opcode : e_ws_frame_opcode::opcode_continuation );
 
-        byte1 |= ( fin ? 0x80 : 0x00 ); // fin is bit 7
-        byte1 |= ( rsv1 << 6 ); // rsv1 is bit 6
-        byte1 |= ( rsv2 << 5 ); // rsv2 is bit 5
-        byte1 |= ( rsv3 << 4 ); // rsv3 is bit 4
-        byte1 |= static_cast< unsigned char >( fragment_opcode ) & 0x0F; // opcode is bits 0-3
-
-        if ( fragment.push_back( byte1 ) != c_byte_stream::e_status::ok )
+        if ( fragment.push_back( byte1.value ) != c_byte_stream::e_status::ok )
         {
             return e_ws_frame_status::status_error;
         }
 
-        byte2 |= ( mask ? 0x80 : 0x00 ); // mask is bit 7
+        ws_frame_byte2_t byte2;
 
-        size_t payload_size = std::min< size_t >( CHUNK_SIZE, size );
+        byte2.bits.mask = mask;
 
-        if ( payload_size > 65535 )
+        size_t payload_length = std::min< size_t >( CHUNK_SIZE, size );
+
+        if ( payload_length > 65535 )
         {
             // indicate 64-bit payload length
-            byte2 |= 127;
+            byte2.bits.payload_length = 127;
 
-            if ( fragment.push_back( byte2 ) != c_byte_stream::e_status::ok )
+            if ( fragment.push_back( byte2.value ) != c_byte_stream::e_status::ok )
             {
                 return e_ws_frame_status::status_error;
             }
 
             // 64-bit host to network endian conversion
-            unsigned long long network_payload_size = c_endian::host_to_network_64( static_cast< unsigned long long >( payload_size ) );
+            unsigned long long network_payload_length = c_endian::host_to_network_64( static_cast< unsigned long long >( payload_length ) );
 
             // write 64-bit value
-            if ( fragment.push_back( reinterpret_cast< unsigned char * >( &network_payload_size ), 8 ) != c_byte_stream::e_status::ok )
+            if ( fragment.push_back( reinterpret_cast< unsigned char * >( &network_payload_length ), 8 ) != c_byte_stream::e_status::ok )
             {
                 return e_ws_frame_status::status_error;
             }
         }
-        else if ( payload_size > 125 )
+        else if ( payload_length > 125 )
         {
             // indicate 16-bit payload length
-            byte2 |= 126;
+            byte2.bits.payload_length = 126;
 
-            if ( fragment.push_back( byte2 ) != c_byte_stream::e_status::ok )
+            if ( fragment.push_back( byte2.value ) != c_byte_stream::e_status::ok )
             {
                 return e_ws_frame_status::status_error;
             }
 
             // 16-bit host to network endian conversion
-            unsigned short network_payload_size = c_endian::host_to_network_16( static_cast< unsigned short >( payload_size ) );
+            unsigned short network_payload_length = c_endian::host_to_network_16( static_cast< unsigned short >( payload_length ) );
 
             // write 16-bit value
-            if ( fragment.push_back( reinterpret_cast< unsigned char * >( &network_payload_size ), 2 ) != c_byte_stream::e_status::ok )
+            if ( fragment.push_back( reinterpret_cast< unsigned char * >( &network_payload_length ), 2 ) != c_byte_stream::e_status::ok )
             {
                 return e_ws_frame_status::status_error;
             }
         }
         else
         {
-            byte2 |= static_cast< unsigned char >( payload_size ) & 0x7F;
+            byte2.bits.payload_length = payload_length;
 
-            if ( fragment.push_back( byte2 ) != c_byte_stream::e_status::ok )
+            if ( fragment.push_back( byte2.value ) != c_byte_stream::e_status::ok )
             {
                 return e_ws_frame_status::status_error;
             }
@@ -318,7 +327,7 @@ c_ws_frame::impl_t::encode( e_ws_frame_opcode opcode, bool mask, unsigned char *
                 }
 
                 // mask payload
-                for ( size_t i = 0; i < payload_size; ++i )
+                for ( size_t i = 0; i < payload_length; ++i )
                 {
                     payload[ i ] ^= mask_key[ i % 4 ];
                 }
@@ -334,7 +343,7 @@ c_ws_frame::impl_t::encode( e_ws_frame_opcode opcode, bool mask, unsigned char *
         if ( input && input->available() )
         {
             // move payload to fragment
-            if ( input->move( &fragment, payload_size, offset ) != c_byte_stream::e_status::ok )
+            if ( input->move( &fragment, payload_length, offset ) != c_byte_stream::e_status::ok )
             {
                 return e_ws_frame_status::status_error;
             }
@@ -347,8 +356,8 @@ c_ws_frame::impl_t::encode( e_ws_frame_opcode opcode, bool mask, unsigned char *
         }
 
         // move to next fragment
-        offset += payload_size;
-        size -= payload_size;
+        offset += payload_length;
+        size -= payload_length;
     }
     while ( size > 0 );
 
@@ -368,27 +377,21 @@ c_ws_frame::impl_t::decode( c_byte_stream *input, c_byte_stream *output, e_ws_fr
         return e_ws_frame_status::status_incomplete;
     }
 
-    unsigned char *byte1 = input->pointer();
-
-    bool fin = ( ( *byte1 ) & 0x80 ) != 0;
-    unsigned char rsv1 = ( ( *byte1 ) & 0x40 );
-    unsigned char rsv2 = ( ( *byte1 ) & 0x20 );
-    unsigned char rsv3 = ( ( *byte1 ) & 0x10 );
-    opcode = static_cast< e_ws_frame_opcode >( ( *byte1 ) & 0x0F );
+    ws_frame_byte1_t byte1 = { *input->pointer() };
 
     // RFC 7692
     // todo: support rsv1 permessage-deflate compression
 
     // reserved bits for extending features
-    if ( rsv1 != 0 || rsv2 != 0 || rsv3 != 0 )
+    if ( byte1.bits.rsv1 != 0 || byte1.bits.rsv2 != 0 || byte1.bits.rsv3 != 0 )
     {
         return e_ws_frame_status::status_error;
     }
 
-    switch ( opcode )
+    switch ( byte1.bits.opcode )
     {
         case e_ws_frame_opcode::opcode_continuation:
-            if ( fin )
+            if ( byte1.bits.fin )
             {
                 return e_ws_frame_status::status_error;
             }
@@ -399,6 +402,7 @@ c_ws_frame::impl_t::decode( c_byte_stream *input, c_byte_stream *output, e_ws_fr
         case e_ws_frame_opcode::opcode_close:
         case e_ws_frame_opcode::opcode_ping:
         case e_ws_frame_opcode::opcode_pong:
+            opcode = byte1.bits.opcode;
             break;
 
         // further planned non controll
@@ -425,44 +429,40 @@ c_ws_frame::impl_t::decode( c_byte_stream *input, c_byte_stream *output, e_ws_fr
         return e_ws_frame_status::status_incomplete;
     }
 
-    unsigned char *byte2 = input->pointer( 1 );
+    ws_frame_byte2_t byte2 = { *input->pointer( 1 ) };
 
-    bool mask = ( ( *byte2 ) & 0x80 ) != 0;
-
-    // read 7-bit value
-    unsigned long long payload_size = ( *byte2 ) & 0x7F;
-
+    size_t payload_length = byte2.bits.payload_length;
     size_t offset = 2;
 
-    if ( input->size() < ( payload_size == 127 ? 8 : 2 ) )
+    if ( input->size() < ( payload_length == 127 ? 8 : 2 ) )
     {
         return e_ws_frame_status::status_incomplete;
     }
 
-    if ( payload_size == 126 )
+    if ( payload_length == 126 )
     {
         // read 16-bit value
-        if ( input->copy( reinterpret_cast< unsigned char * >( &payload_size ), 2, nullptr, offset ) != c_byte_stream::e_status::ok )
+        if ( input->copy( reinterpret_cast< unsigned char * >( &payload_length ), 2, nullptr, offset ) != c_byte_stream::e_status::ok )
         {
             return e_ws_frame_status::status_error;
         }
 
         // 16-bit network to host endian conversion
-        payload_size = static_cast< unsigned long long >( c_endian::network_to_host_16( static_cast< unsigned short >( payload_size ) ) );
+        payload_length = static_cast< unsigned long long >( c_endian::network_to_host_16( static_cast< unsigned short >( payload_length ) ) );
 
         // move by 2-bytes
         offset += 2;
     }
-    else if ( payload_size == 127 )
+    else if ( payload_length == 127 )
     {
         // read 64-bit value
-        if ( input->copy( reinterpret_cast< unsigned char * >( &payload_size ), 8, nullptr, offset ) != c_byte_stream::e_status::ok )
+        if ( input->copy( reinterpret_cast< unsigned char * >( &payload_length ), 8, nullptr, offset ) != c_byte_stream::e_status::ok )
         {
             return e_ws_frame_status::status_error;
         }
 
         // 64-bit network to host endian conversion
-        payload_size = c_endian::network_to_host_64( static_cast< unsigned long long >( payload_size ) );
+        payload_length = c_endian::network_to_host_64( static_cast< unsigned long long >( payload_length ) );
 
         // move by 8-bytes
         offset += 8;
@@ -475,7 +475,7 @@ c_ws_frame::impl_t::decode( c_byte_stream *input, c_byte_stream *output, e_ws_fr
 
     unsigned char mask_key[ 4 ] = { 0 };
 
-    if ( mask )
+    if ( byte2.bits.mask )
     {
         // payload is masked, read 32-bit mask-key
         input->copy( reinterpret_cast< unsigned char * >( &mask_key ), 4, nullptr, offset );
@@ -484,12 +484,12 @@ c_ws_frame::impl_t::decode( c_byte_stream *input, c_byte_stream *output, e_ws_fr
         offset += 4;
     }
 
-    if ( input->size() < offset + payload_size )
+    if ( input->size() < offset + payload_length )
     {
         return e_ws_frame_status::status_incomplete;
     }
 
-    if ( payload_size > 0 )
+    if ( payload_length > 0 )
     {
         unsigned char *payload = input->pointer( offset );
 
@@ -498,17 +498,17 @@ c_ws_frame::impl_t::decode( c_byte_stream *input, c_byte_stream *output, e_ws_fr
             return e_ws_frame_status::status_error;
         }
 
-        if ( mask )
+        if ( byte2.bits.mask )
         {
             // unmask payload
-            for ( size_t i = 0; i < payload_size; ++i )
+            for ( size_t i = 0; i < payload_length; ++i )
             {
                 payload[ i ] ^= mask_key[ i % 4 ];
             }
         }
 
         // move payload
-        if ( input->move( output, payload_size, offset ) != c_byte_stream::e_status::ok )
+        if ( input->move( output, payload_length, offset ) != c_byte_stream::e_status::ok )
         {
             return e_ws_frame_status::status_error;
         }
@@ -520,10 +520,12 @@ c_ws_frame::impl_t::decode( c_byte_stream *input, c_byte_stream *output, e_ws_fr
         return e_ws_frame_status::status_error;
     }
 
-    if ( fin )
+    opcode = static_cast< e_ws_frame_opcode >( byte1.bits.opcode );
+
+    if ( byte1.bits.fin )
     {
         // push null-terminator to indicate end of sequence
-        if ( opcode == e_ws_frame_opcode::opcode_text )
+        if ( byte1.bits.opcode == e_ws_frame_opcode::opcode_text )
         {
             output->push_back( '\0' );
         }
