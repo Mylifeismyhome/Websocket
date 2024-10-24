@@ -46,6 +46,8 @@ union ws_frame_byte1_t
     } bits;
 };
 
+static_assert( sizeof( ws_frame_byte1_t ) == sizeof( unsigned char ), "ws_frame_byte1_t size mismatch!" );
+
 union ws_frame_byte2_t
 {
     unsigned char value;
@@ -56,6 +58,8 @@ union ws_frame_byte2_t
         bool mask : 1;
     } bits;
 };
+
+static_assert( sizeof( ws_frame_byte2_t ) == sizeof( unsigned char ), "ws_frame_byte2_t size mismatch!" );
 
 struct c_ws_frame::impl_t
 {
