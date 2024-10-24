@@ -150,7 +150,7 @@ main()
     }
 #endif
 
-    /*  std::signal( SIGINT, exit_handler );*/
+    std::signal( SIGINT, exit_handler );
 
     ws_settings_init( &settings );
 
