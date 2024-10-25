@@ -155,13 +155,13 @@ match1( unsigned int len, unsigned int distance, unsigned char *op )
 }
 
 int
-c_lz277::compress( const void *input, int length, void *output, size_t window_size )
+c_lz277::compress( unsigned char *input, size_t length, unsigned char *output, size_t window_size )
 {
-    const unsigned char *ip = ( const unsigned char * )input;
+    const unsigned char *ip = input;
     const unsigned char *ip_start = ip;
     const unsigned char *ip_bound = ip + length - 4;
     const unsigned char *ip_limit = ip + length - 12 - 1;
-    unsigned char *op = ( unsigned char * )output;
+    unsigned char *op = output;
 
     unsigned int htab[ HASH_SIZE ];
     unsigned int seq, hash;
@@ -234,7 +234,7 @@ c_lz277::compress( const void *input, int length, void *output, size_t window_si
 }
 
 int
-c_lz277::decompress( const void *input, int length, void *output, int maxout )
+c_lz277::decompress( unsigned char *input, size_t length, unsigned char *output, size_t maxout )
 {
     const unsigned char *ip = ( const unsigned char * )input;
     const unsigned char *ip_limit = ip + length;
