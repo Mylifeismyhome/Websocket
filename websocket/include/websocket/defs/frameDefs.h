@@ -10,8 +10,7 @@ enum class e_ws_frame_status : unsigned char
     status_error = 0x1, /**< Status indicates an error occurred */
     status_incomplete = 0x2, /**< Status indicates message is waiting for more information */
     status_fragment = 0x3, /**< Status indicates a message fragment was processed */
-    status_final = 0x4, /**< Status indicates the message is final */
-    status_message_too_big = 0x5 /**< Status indicates the message was too big to process */
+    status_final = 0x4 /**< Status indicates the message is final */
 };
 
 enum e_ws_frame_opcode : unsigned char

@@ -747,6 +747,12 @@ c_websocket::impl_t::communicate( file_descriptor_context *ctx )
             {
                 if ( ctx->stream.input.push_back( buffer, status ) == c_byte_stream::e_status::ok )
                 {
+                    if ( ctx->stream.input.size() > message_limit )
+                    {
+                        close( ctx, e_ws_closure_status::closure_message_too_big );
+                        return;
+                    }
+
                     do
                     {
                         switch ( ctx->ws_con_state )
@@ -806,7 +812,7 @@ c_websocket::impl_t::communicate( file_descriptor_context *ctx )
                             case e_ws_con_state::open:
                             case e_ws_con_state::closing:
                             {
-                                e_ws_frame_status status = ctx->frame.read( &ctx->stream.input, message_limit );
+                                e_ws_frame_status status = ctx->frame.read( &ctx->stream.input );
 
                                 switch ( status )
                                 {
@@ -889,12 +895,6 @@ c_websocket::impl_t::communicate( file_descriptor_context *ctx )
                                         }
 
                                         break;
-                                    }
-
-                                    case e_ws_frame_status::status_message_too_big:
-                                    {
-                                        close( ctx, e_ws_closure_status::closure_message_too_big );
-                                        return;
                                     }
 
                                     case e_ws_frame_status::status_error:
