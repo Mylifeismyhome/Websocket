@@ -19,13 +19,21 @@ The library is designed to facilitate secure and unsecured WebSocket connections
 
 - C++11 or later
 - CMake 3.0 or later
+- **[optional]** Doxygen
 
-### Building from Source
+## Building from Source
 
 ```bash
 git clone https://github.com/Mylifeismyhome/Websocket.git
 cd Websocket
- mkdir build
+mkdir build
 cd build
 cmake -DCMAKE_CXX_FLAGS="-m64" -DENABLE_C_API=ON -DENABLE_CPP_API=ON -DBUILD_SHARED=ON -DBUILD_STATIC=ON -DEXAMPLE_C_API=ON ../CMakeLists.txt
 make
+```
+
+## Building documentation
+
+```bash
+doxygen DoxyFile
+```
