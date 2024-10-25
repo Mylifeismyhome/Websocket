@@ -115,11 +115,17 @@ enum class e_file_descriptor_type : unsigned char
 
 enum class e_file_descriptor_state : unsigned char
 {
-    await,
-    handshake,
-    open,
-    close,
-    terminate
+    handshake, /**< file descriptor is performing ssl/tls handshake. */
+    open, /**< file descriptor is open. */
+    close /**< file descriptor is closed. */
+};
+
+enum class e_ws_con_state : unsigned char
+{
+    opening, /**< connection is performing opening handshake. */
+    open, /**< connection is estabilished. */
+    closing, /**< connection is performing closure handshake. */
+    closed /**< connection is closed. */
 };
 
 struct file_descriptor_context
@@ -131,6 +137,8 @@ struct file_descriptor_context
 
     e_file_descriptor_type type; /**< type of the file descriptor. */
     e_file_descriptor_state state; /**< state of the file descriptor. */
+
+    e_ws_con_state ws_con_state; /**< ws connection state. */
 
     network_stream_t stream;
 
@@ -219,7 +227,7 @@ struct c_websocket::impl_t
     open( const char *host_name, const char *host_port, int *out_fd );
 
     void
-    terminate( file_descriptor_context *ctx, e_ws_closure_status status );
+    close( file_descriptor_context *ctx, e_ws_closure_status closure_status );
 
     int
     operate();
@@ -424,10 +432,12 @@ file_descriptor_context::file_descriptor_context()
     type = e_file_descriptor_type::any;
     state = e_file_descriptor_state::handshake;
 
+    ws_con_state = e_ws_con_state::opening;
+
     mbedtls_timing_set_delay( &timer_ping_ctx, 0, 0 );
     mbedtls_timing_set_delay( &timer_ping_pong_ctx, 0, 0 );
 
-    closure_status = e_ws_closure_status::closure_normal;
+    closure_status = e_ws_closure_status::closure_no_status_received;
 }
 
 file_descriptor_context::~file_descriptor_context()
@@ -631,7 +641,8 @@ c_websocket::impl_t::accept( file_descriptor_context *ctx )
     new_fd.ssl = ssl;
     new_fd.addr = { client_addr, client_addr_len };
     new_fd.type = e_file_descriptor_type::any;
-    new_fd.state = e_file_descriptor_state::await;
+    new_fd.state = e_file_descriptor_state::handshake;
+    new_fd.ws_con_state = e_ws_con_state::opening;
     fd_map.emplace( std::make_pair( net.fd, new_fd ) );
 }
 
@@ -640,7 +651,7 @@ c_websocket::impl_t::communicate( file_descriptor_context *ctx )
 {
     int state = poll( ctx );
 
-    if ( ctx->state == e_file_descriptor_state::await )
+    if ( ctx->state == e_file_descriptor_state::handshake )
     {
         if ( mode == e_ws_mode::mode_secured )
         {
@@ -658,18 +669,18 @@ c_websocket::impl_t::communicate( file_descriptor_context *ctx )
 
             if ( status != 0 )
             {
-                terminate( ctx, e_ws_closure_status::closure_tls_handshake_failed );
+                close( ctx, e_ws_closure_status::closure_tls_handshake_failed );
                 return;
             }
 
             if ( MBEDTLS_STATUS( mbedtls_ssl_get_verify_result( &ctx->ssl ) ) != 0 )
             {
-                terminate( ctx, e_ws_closure_status::closure_tls_handshake_failed );
+                close( ctx, e_ws_closure_status::closure_tls_handshake_failed );
                 return;
             }
         }
 
-        ctx->state = e_file_descriptor_state::handshake;
+        ctx->state = e_file_descriptor_state::open;
 
         switch ( endpoint )
         {
@@ -680,183 +691,101 @@ c_websocket::impl_t::communicate( file_descriptor_context *ctx )
             {
                 if ( c_ws_handshake::create( host.c_str(), allowed_origin.c_str(), "/", &ctx->stream.output, ctx->sec_websocket_accept ) != c_ws_handshake::e_status::ok )
                 {
-                    terminate( ctx, e_ws_closure_status::closure_protocol_error );
+                    close( ctx, e_ws_closure_status::closure_protocol_error );
                     return;
                 }
 
                 break;
             }
         }
-
-        return;
     }
 
     if ( ctx->state == e_file_descriptor_state::open )
     {
-        if ( mbedtls_timing_get_delay( &ctx->timer_ping_pong_ctx ) == 2 )
+        if ( ctx->ws_con_state == e_ws_con_state::open )
         {
-            terminate( ctx, e_ws_closure_status::closure_abnormal );
-        }
-
-        if ( mbedtls_timing_get_delay( &ctx->timer_ping_ctx ) == 2 )
-        {
-            if ( c_ws_frame( e_ws_frame_opcode::opcode_ping ).write( &ctx->stream.output ) == e_ws_frame_status::status_ok )
+            if ( mbedtls_timing_get_delay( &ctx->timer_ping_pong_ctx ) == 2 )
             {
-                ctx->timer_pong( ping_timeout );
+                close( ctx, e_ws_closure_status::closure_abnormal );
+            }
+
+            if ( mbedtls_timing_get_delay( &ctx->timer_ping_ctx ) == 2 )
+            {
+                if ( c_ws_frame( e_ws_frame_opcode::opcode_ping ).write( &ctx->stream.output ) == e_ws_frame_status::status_ok )
+                {
+                    ctx->timer_pong( ping_timeout );
+                }
             }
         }
-    }
 
-    if ( state & MBEDTLS_NET_POLL_READ )
-    {
-        unsigned char buffer[ CHUNK_SIZE ];
-
-        int status = -1;
-
-        if ( mode == e_ws_mode::mode_secured )
+        if ( state & MBEDTLS_NET_POLL_READ )
         {
-            status = MBEDTLS_STATUS( mbedtls_ssl_read( &ctx->ssl, buffer, CHUNK_SIZE ) );
-        }
-        else
-        {
-            status = MBEDTLS_STATUS( mbedtls_net_recv_timeout( &ctx->net, buffer, CHUNK_SIZE, read_timeout ) );
-        }
+            unsigned char buffer[ CHUNK_SIZE ];
 
-        if ( status > 0 )
-        {
-            if ( ctx->stream.input.push_back( buffer, status ) == c_byte_stream::e_status::ok )
+            int status = -1;
+
+            if ( mode == e_ws_mode::mode_secured )
             {
-                do
+                status = MBEDTLS_STATUS( mbedtls_ssl_read( &ctx->ssl, buffer, CHUNK_SIZE ) );
+            }
+            else
+            {
+                status = MBEDTLS_STATUS( mbedtls_net_recv_timeout( &ctx->net, buffer, CHUNK_SIZE, read_timeout ) );
+            }
+
+            if ( status > 0 )
+            {
+                if ( ctx->stream.input.push_back( buffer, status ) == c_byte_stream::e_status::ok )
                 {
-                    if ( ctx->state == e_file_descriptor_state::handshake )
+                    do
                     {
-                        c_ws_handshake::e_status status = c_ws_handshake::e_status::ok;
-
-                        switch ( endpoint )
+                        switch ( ctx->ws_con_state )
                         {
-                            case e_ws_endpoint_type::endpoint_server:
-                                status = c_ws_handshake::server( host.c_str(), allowed_origin.c_str(), &ctx->stream.input, &ctx->stream.output );
-                                break;
-
-                            case e_ws_endpoint_type::endpoint_client:
-                                status = c_ws_handshake::client( ctx->sec_websocket_accept.c_str(), &ctx->stream.input, &ctx->stream.output );
-                                break;
-
-                            default:
-                                break;
-                        }
-
-                        switch ( status )
-                        {
-                            case e_ws_status::status_busy:
+                            case e_ws_con_state::opening:
                             {
-                                return;
-                            }
+                                c_ws_handshake::e_status status = c_ws_handshake::e_status::ok;
 
-                            case e_ws_status::status_ok:
-                            {
-                                ctx->state = e_file_descriptor_state::open;
-
-                                ctx->timer_ping( ping_interval );
-
-                                instance->on_open( ctx->net.fd, ctx->addr.to_string().c_str() );
-
-                                break;
-                            }
-
-                            case e_ws_status::status_error:
-                            {
-                                terminate( ctx, e_ws_closure_status::closure_protocol_error );
-                                return;
-                            }
-
-                            default:
-                            {
-                                terminate( ctx, e_ws_closure_status::closure_internal_error );
-                                return;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        e_ws_frame_status status = ctx->frame.read( &ctx->stream.input );
-
-                        switch ( status )
-                        {
-                            case e_ws_frame_status::status_incomplete:
-                            {
-                                return;
-                            }
-
-                            case e_ws_frame_status::status_fragment:
-                            {
-                                break;
-                            }
-
-                            case e_ws_frame_status::status_final:
-                            {
-                                e_ws_frame_opcode opcode = ctx->frame.get_opcode();
-
-                                switch ( opcode )
+                                switch ( endpoint )
                                 {
-                                    case e_ws_frame_opcode::opcode_text:
-                                    {
-                                        if ( !ctx->frame.is_payload_utf8() )
-                                        {
-                                            terminate( ctx, e_ws_closure_status::closure_invalid_data );
-                                            return;
-                                        }
-
-                                        std::thread( &c_websocket::impl_t::async_ws_frame, this, ctx->net.fd, std::move( ctx->frame ) ).detach();
-                                        ctx->frame = {};
+                                    case e_ws_endpoint_type::endpoint_server:
+                                        status = c_ws_handshake::server( host.c_str(), allowed_origin.c_str(), &ctx->stream.input, &ctx->stream.output );
                                         break;
+
+                                    case e_ws_endpoint_type::endpoint_client:
+                                        status = c_ws_handshake::client( ctx->sec_websocket_accept.c_str(), &ctx->stream.input, &ctx->stream.output );
+                                        break;
+
+                                    default:
+                                        break;
+                                }
+
+                                switch ( status )
+                                {
+                                    case e_ws_status::status_busy:
+                                    {
+                                        return;
                                     }
 
-                                    case e_ws_frame_opcode::opcode_binary:
+                                    case e_ws_status::status_ok:
                                     {
-                                        std::thread( &c_websocket::impl_t::async_ws_frame, this, ctx->net.fd, std::move( ctx->frame ) ).detach();
-                                        ctx->frame = {};
-                                        break;
-                                    }
+                                        ctx->ws_con_state = e_ws_con_state::open;
 
-                                    case e_ws_frame_opcode::opcode_ping:
-                                    {
-                                        if ( c_ws_frame( e_ws_frame_opcode::opcode_pong ).write( &ctx->stream.output ) != e_ws_frame_status::status_ok )
-                                        {
-                                            terminate( ctx, e_ws_closure_status::closure_internal_error );
-                                        }
-
-                                        break;
-                                    }
-
-                                    case e_ws_frame_opcode::opcode_pong:
-                                    {
-                                        ctx->reset_timer_pong();
                                         ctx->timer_ping( ping_interval );
 
+                                        instance->on_open( ctx->net.fd, ctx->addr.to_string().c_str() );
+
                                         break;
                                     }
 
-                                    case e_ws_frame_opcode::opcode_close:
+                                    case e_ws_status::status_error:
                                     {
-                                        if ( ctx->state == e_file_descriptor_state::close )
-                                        {
-                                            terminate( ctx, e_ws_closure_status::closure_normal );
-                                        }
-                                        else
-                                        {
-                                            if ( c_ws_frame( e_ws_frame_opcode::opcode_close ).write( &ctx->stream.output ) != e_ws_frame_status::status_ok )
-                                            {
-                                                terminate( ctx, e_ws_closure_status::closure_internal_error );
-                                            }
-                                        }
-
+                                        close( ctx, e_ws_closure_status::closure_protocol_error );
                                         return;
                                     }
 
                                     default:
                                     {
-                                        terminate( ctx, e_ws_closure_status::closure_internal_error );
+                                        close( ctx, e_ws_closure_status::closure_internal_error );
                                         return;
                                     }
                                 }
@@ -864,65 +793,121 @@ c_websocket::impl_t::communicate( file_descriptor_context *ctx )
                                 break;
                             }
 
-                            case e_ws_frame_status::status_error:
+                            case e_ws_con_state::open:
+                            case e_ws_con_state::closing:
                             {
-                                terminate( ctx, e_ws_closure_status::closure_protocol_error );
-                                return;
+                                e_ws_frame_status status = ctx->frame.read( &ctx->stream.input );
+
+                                switch ( status )
+                                {
+                                    case e_ws_frame_status::status_incomplete:
+                                    {
+                                        return;
+                                    }
+
+                                    case e_ws_frame_status::status_fragment:
+                                    {
+                                        break;
+                                    }
+
+                                    case e_ws_frame_status::status_final:
+                                    {
+                                        e_ws_frame_opcode opcode = ctx->frame.get_opcode();
+
+                                        switch ( opcode )
+                                        {
+                                            case e_ws_frame_opcode::opcode_text:
+                                            {
+                                                if ( !ctx->frame.is_payload_utf8() )
+                                                {
+                                                    close( ctx, e_ws_closure_status::closure_invalid_data );
+                                                    return;
+                                                }
+
+                                                std::thread( &c_websocket::impl_t::async_ws_frame, this, ctx->net.fd, std::move( ctx->frame ) ).detach();
+                                                ctx->frame = {};
+                                                break;
+                                            }
+
+                                            case e_ws_frame_opcode::opcode_binary:
+                                            {
+                                                std::thread( &c_websocket::impl_t::async_ws_frame, this, ctx->net.fd, std::move( ctx->frame ) ).detach();
+                                                ctx->frame = {};
+                                                break;
+                                            }
+
+                                            case e_ws_frame_opcode::opcode_ping:
+                                            {
+                                                if ( c_ws_frame( e_ws_frame_opcode::opcode_pong ).write( &ctx->stream.output ) != e_ws_frame_status::status_ok )
+                                                {
+                                                    close( ctx, e_ws_closure_status::closure_internal_error );
+                                                }
+
+                                                break;
+                                            }
+
+                                            case e_ws_frame_opcode::opcode_pong:
+                                            {
+                                                ctx->reset_timer_pong();
+                                                ctx->timer_ping( ping_interval );
+
+                                                break;
+                                            }
+
+                                            case e_ws_frame_opcode::opcode_close:
+                                            {
+                                                if ( ctx->ws_con_state == e_ws_con_state::closing )
+                                                {
+                                                    ctx->ws_con_state = e_ws_con_state::closed;
+                                                    close( ctx, e_ws_closure_status::closure_normal );
+                                                }
+                                                else
+                                                {
+                                                    if ( c_ws_frame( e_ws_frame_opcode::opcode_close ).write( &ctx->stream.output ) != e_ws_frame_status::status_ok )
+                                                    {
+                                                        close( ctx, e_ws_closure_status::closure_internal_error );
+                                                    }
+
+                                                    ctx->ws_con_state = e_ws_con_state::closed;
+                                                    close( ctx, e_ws_closure_status::closure_normal );
+                                                }
+
+                                                return;
+                                            }
+
+                                            default:
+                                            {
+                                                close( ctx, e_ws_closure_status::closure_internal_error );
+                                                return;
+                                            }
+                                        }
+
+                                        break;
+                                    }
+
+                                    case e_ws_frame_status::status_error:
+                                    {
+                                        close( ctx, e_ws_closure_status::closure_protocol_error );
+                                        return;
+                                    }
+
+                                    default:
+                                    {
+                                        close( ctx, e_ws_closure_status::closure_internal_error );
+                                        return;
+                                    }
+                                }
+
+                                break;
                             }
 
                             default:
                             {
-                                terminate( ctx, e_ws_closure_status::closure_internal_error );
-                                return;
+                                break;
                             }
                         }
                     }
-                }
-                while ( ctx->stream.input.available() );
-            }
-        }
-        else
-        {
-            switch ( status )
-            {
-                case 0:
-                case MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY:
-                case MBEDTLS_ERR_SSL_TIMEOUT:
-                case MBEDTLS_ERR_NET_CONN_RESET:
-                    terminate( ctx, e_ws_closure_status::closure_abnormal );
-                    break;
-
-                default:
-                case MBEDTLS_ERR_SSL_WANT_READ:
-                case MBEDTLS_ERR_SSL_WANT_WRITE:
-                    // pipe is busy
-                    break;
-            }
-        }
-    }
-
-    if ( state & MBEDTLS_NET_POLL_WRITE )
-    {
-        if ( ctx->stream.output.available() )
-        {
-            size_t length = ctx->stream.output.size() > CHUNK_SIZE ? CHUNK_SIZE : ctx->stream.output.size();
-
-            int status = -1;
-
-            if ( mode == e_ws_mode::mode_secured )
-            {
-                status = MBEDTLS_STATUS( mbedtls_ssl_write( &ctx->ssl, ctx->stream.output.pointer(), length ) );
-            }
-            else
-            {
-                status = MBEDTLS_STATUS( mbedtls_net_send( &ctx->net, ctx->stream.output.pointer(), length ) );
-            }
-
-            if ( status > 0 )
-            {
-                if ( ctx->stream.output.pop( status ) != c_byte_stream::e_status::ok )
-                {
-                    ctx->stream.output.flush();
+                    while ( ctx->stream.input.available() );
                 }
             }
             else
@@ -931,13 +916,58 @@ c_websocket::impl_t::communicate( file_descriptor_context *ctx )
                 {
                     case 0:
                     case MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY:
+                    case MBEDTLS_ERR_SSL_TIMEOUT:
                     case MBEDTLS_ERR_NET_CONN_RESET:
-                        terminate( ctx, e_ws_closure_status::closure_abnormal );
+                        close( ctx, e_ws_closure_status::closure_abnormal );
+                        break;
 
+                    default:
                     case MBEDTLS_ERR_SSL_WANT_READ:
                     case MBEDTLS_ERR_SSL_WANT_WRITE:
                         // pipe is busy
                         break;
+                }
+            }
+        }
+
+        if ( state & MBEDTLS_NET_POLL_WRITE )
+        {
+            if ( ctx->stream.output.available() )
+            {
+                size_t length = ctx->stream.output.size() > CHUNK_SIZE ? CHUNK_SIZE : ctx->stream.output.size();
+
+                int status = -1;
+
+                if ( mode == e_ws_mode::mode_secured )
+                {
+                    status = MBEDTLS_STATUS( mbedtls_ssl_write( &ctx->ssl, ctx->stream.output.pointer(), length ) );
+                }
+                else
+                {
+                    status = MBEDTLS_STATUS( mbedtls_net_send( &ctx->net, ctx->stream.output.pointer(), length ) );
+                }
+
+                if ( status > 0 )
+                {
+                    if ( ctx->stream.output.pop( status ) != c_byte_stream::e_status::ok )
+                    {
+                        ctx->stream.output.flush();
+                    }
+                }
+                else
+                {
+                    switch ( status )
+                    {
+                        case 0:
+                        case MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY:
+                        case MBEDTLS_ERR_NET_CONN_RESET:
+                            close( ctx, e_ws_closure_status::closure_abnormal );
+
+                        case MBEDTLS_ERR_SSL_WANT_READ:
+                        case MBEDTLS_ERR_SSL_WANT_WRITE:
+                            // pipe is busy
+                            break;
+                    }
                 }
             }
         }
@@ -967,6 +997,7 @@ c_websocket::impl_t::bind( const char *bind_ip, const char *bind_port, int *out_
     new_fd.addr = bind_ip ? bind_ip : "0.0.0.0";
     new_fd.type = e_file_descriptor_type::bind;
     new_fd.state = e_file_descriptor_state::open;
+    new_fd.ws_con_state = e_ws_con_state::open;
     fd_map.emplace( std::make_pair( net.fd, new_fd ) );
 
     if ( out_fd )
@@ -1015,7 +1046,8 @@ c_websocket::impl_t::open( const char *host_name, const char *host_port, int *ou
     new_fd.ssl = ssl;
     new_fd.addr = host_name;
     new_fd.type = e_file_descriptor_type::any;
-    new_fd.state = e_file_descriptor_state::await;
+    new_fd.state = e_file_descriptor_state::handshake;
+    new_fd.ws_con_state = e_ws_con_state::opening;
     fd_map.emplace( std::make_pair( net.fd, new_fd ) );
 
     if ( out_fd )
@@ -1027,11 +1059,12 @@ c_websocket::impl_t::open( const char *host_name, const char *host_port, int *ou
 }
 
 void
-c_websocket::impl_t::terminate( file_descriptor_context *ctx, e_ws_closure_status status )
+c_websocket::impl_t::close( file_descriptor_context *ctx, e_ws_closure_status closure_status )
 {
     ctx->stream.input.flush();
     ctx->stream.output.flush();
-    ctx->state = e_file_descriptor_state::terminate;
+    ctx->closure_status = closure_status;
+    ctx->state = e_file_descriptor_state::close;
 }
 
 int
@@ -1043,7 +1076,7 @@ c_websocket::impl_t::operate()
     {
         file_descriptor_context *ctx = &it->second;
 
-        if ( ctx->state != e_file_descriptor_state::terminate )
+        if ( ctx->state != e_file_descriptor_state::close )
         {
             ++it;
             continue;
@@ -1055,7 +1088,7 @@ c_websocket::impl_t::operate()
             continue;
         }
 
-        if ( ctx->type != e_file_descriptor_type::bind && ctx->state == e_file_descriptor_state::open )
+        if ( ctx->type != e_file_descriptor_type::bind )
         {
             int state = poll( ctx );
 
@@ -1088,6 +1121,8 @@ c_websocket::impl_t::operate()
         it = fd_map.erase( it );
     }
 
+    std::size_t fd_count = fd_map.size();
+
     for ( auto it = fd_map.begin(); it != fd_map.end(); ++it )
     {
         file_descriptor_context *ctx = &it->second;
@@ -1099,7 +1134,7 @@ c_websocket::impl_t::operate()
                 // do not accept further file descriptors, if limit is exceeded.
                 if ( fd_limit != 0 )
                 {
-                    if ( fd_map.size() == fd_limit )
+                    if ( fd_count == fd_limit )
                     {
                         break;
                     }
@@ -1117,7 +1152,7 @@ c_websocket::impl_t::operate()
 
             default:
             {
-                terminate( ctx, e_ws_closure_status::closure_internal_error );
+                close( ctx, e_ws_closure_status::closure_internal_error );
                 break;
             }
         }
@@ -1125,7 +1160,7 @@ c_websocket::impl_t::operate()
 
     unlock();
 
-    return fd_map.size() != 0;
+    return fd_count != 0;
 }
 
 void
@@ -1241,22 +1276,22 @@ c_websocket::close( int fd )
 
     if ( ctx->type == e_file_descriptor_type::bind )
     {
-        impl->terminate( ctx, e_ws_closure_status::closure_normal );
+        impl->close( ctx, e_ws_closure_status::closure_normal );
 
         impl->unlock();
 
         return;
     }
 
-    if ( ctx->state == e_file_descriptor_state::open )
+    if ( ctx->ws_con_state == e_ws_con_state::open )
     {
         if ( c_ws_frame( e_ws_frame_opcode::opcode_close ).write( &ctx->stream.output ) != e_ws_frame_status::status_ok )
         {
-            impl->terminate( ctx, e_ws_closure_status::closure_internal_error );
+            impl->close( ctx, e_ws_closure_status::closure_internal_error );
         }
         else
         {
-            ctx->state = e_file_descriptor_state::close;
+            ctx->ws_con_state = e_ws_con_state::closing;
         }
 
         impl->unlock();
@@ -1264,7 +1299,7 @@ c_websocket::close( int fd )
         return;
     }
 
-    impl->terminate( ctx, e_ws_closure_status::closure_normal );
+    impl->close( ctx, e_ws_closure_status::closure_abnormal );
 
     impl->unlock();
 }
@@ -1322,6 +1357,11 @@ c_websocket::emit( int fd, c_ws_frame *frame )
     file_descriptor_context *ctx = &it->second;
 
     if ( ctx->state != e_file_descriptor_state::open )
+    {
+        return e_ws_status::status_error;
+    }
+
+    if ( ctx->ws_con_state == e_ws_con_state::opening || ctx->ws_con_state == e_ws_con_state::closed )
     {
         return e_ws_status::status_error;
     }

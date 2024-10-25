@@ -1079,5 +1079,5 @@ c_byte_stream::available() const
 bool
 c_byte_stream::is_utf8() const
 {
-    impl->compare();
+    return impl->is_utf8();
 }
