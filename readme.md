@@ -2,14 +2,20 @@
 
 ## Overview
 
-This repository contains a WebSocket library that offers both C and C++ APIs for easy integration into various projects.
+This repository implements WebSocket functionality based on RFC6455, providing both C and C++ APIs for seamless integration into diverse projects.
 The library is designed to facilitate secure and unsecured WebSocket connections, utilizing [mbedTLS](https://tls.mbed.org/) for secure communication. 
 
 ## Features
 
-- **C API and C++ API**: Provides both C and C++ interfaces for flexibility and ease of use.
-- **Secure and Unsecured Connections**: Supports both secure WebSocket (WSS) connections using mbedTLS and unsecured WebSocket (WS) connections.
-- **CMake Build System**: Easily build the library using CMake.
+- **C and C++ APIs**: Offers both C and C++ interfaces for flexibility and ease of integration.
+- **Secure and Unsecured WebSocket Connections**: Supports secure WebSocket (WSS) using mbedTLS, as well as standard unsecured WebSocket (WS) connections.
+- **CMake Build System**: Simplifies building and integrating the library with CMake.
+
+## Limitations
+
+- **RSV1 Flag**: Compression (e.g., permessage-deflate) is not yet supported but will be added in the future.
+- **Sec-WebSocket-Protocol**: Not currently handled.
+- **Sec-WebSocket-Extension**: Not currently handled.
 
 ## Requirements
 
