@@ -848,7 +848,7 @@ c_websocket::impl_t::communicate( file_descriptor_context *ctx )
                                 {
                                     case e_ws_frame_opcode::opcode_text:
                                     {
-                                        if ( !utf8_check_is_valid( reinterpret_cast< const char * >( ctx->frame.get_payload() ), static_cast<int>(ctx->frame.get_payload_size()) ) )
+                                        if ( !utf8_check_is_valid( reinterpret_cast< const char * >( ctx->frame.get_payload() ), static_cast< int >( ctx->frame.get_payload_size() ) ) )
                                         {
                                             terminate( ctx, e_ws_closure_status::closure_invalid_data );
                                             return;
@@ -1190,7 +1190,7 @@ c_websocket::on_open( int fd, const char *addr )
 {
     if ( event_open_callback )
     {
-        ( *event_open_callback )( this, fd, addr );
+        event_open_callback( this, fd, addr );
     }
 }
 
@@ -1199,7 +1199,7 @@ c_websocket::on_frame( int fd, e_ws_frame_opcode opcode, unsigned char *payload,
 {
     if ( event_frame_callback )
     {
-        ( *event_frame_callback )( this, fd, opcode, payload, size );
+        event_frame_callback( this, fd, opcode, payload, size );
     }
 }
 
@@ -1208,7 +1208,7 @@ c_websocket::on_close( int fd, e_ws_closure_status status )
 {
     if ( event_close_callback )
     {
-        ( *event_close_callback )( this, fd, status );
+        event_close_callback( this, fd, status );
     }
 }
 
@@ -1217,7 +1217,7 @@ c_websocket::on_error( const char *message )
 {
     if ( event_error_callback )
     {
-        ( *event_error_callback )( this, message );
+        event_error_callback( this, message );
     }
 }
 
