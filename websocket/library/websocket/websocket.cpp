@@ -54,7 +54,7 @@ SOFTWARE.
 #endif
 
 // Based on this one: http://www.zedwood.com/article/cpp-is-valid-utf8-string-function
-__forceinline bool
+FORCE_INLINE bool
 utf8_check_is_valid( const char *str, int len )
 {
     int n;
