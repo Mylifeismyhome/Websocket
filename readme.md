@@ -22,12 +22,10 @@ The library is designed to facilitate secure and unsecured WebSocket connections
 
 ### Building from Source
 
-1. **Clone the repository**:
-
-   ```bash
-   git clone https://github.com/Mylifeismyhome/Websocket.git
-   cd Websocket
-   mkdir build
-   cd build
-   cmake -DCMAKE_CXX_FLAGS="-m64" -DENABLE_C_API=ON -DENABLE_CPP_API=ON -DBUILD_SHARED=ON -DBUILD_STATIC=ON -DEXAMPLE_C_API=ON ../CMakeLists.txt
-   make
+```bash
+git clone https://github.com/Mylifeismyhome/Websocket.git
+cd Websocket
+ mkdir build
+cd build
+cmake -DCMAKE_CXX_FLAGS="-m64" -DENABLE_C_API=ON -DENABLE_CPP_API=ON -DBUILD_SHARED=ON -DBUILD_STATIC=ON -DEXAMPLE_C_API=ON ../CMakeLists.txt
+make
