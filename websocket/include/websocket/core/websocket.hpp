@@ -131,8 +131,9 @@ class WEBSOCKET_API c_websocket
      *
      * @param ctx The address of the current WebSocket context.
      * @param fd The file descriptor of the WebSocket connection.
+     * @param status The status code indicating the closure reason.
      */
-    typedef void ( *t_event_close )( void *ctx, int fd );
+    typedef void ( *t_event_close )( void *ctx, int fd, e_ws_closure_status status );
 
     /**
      * @brief Function pointer type for handling WebSocket frame reception.
@@ -197,9 +198,10 @@ class WEBSOCKET_API c_websocket
      * or the client.
      *
      * @param fd The file descriptor of the WebSocket connection.
+     * @param status The status code indicating the closure reason.
      */
     virtual void
-    on_close( int fd );
+    on_close( int fd, e_ws_closure_status status );
 
     /**
      * @brief Callback triggered when a WebSocket error occurs.

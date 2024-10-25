@@ -91,9 +91,9 @@ websocket_on_open( void *ctx, int fd, const char *addr )
 }
 
 void
-websocket_on_close( void *ctx, int fd )
+websocket_on_close( void *ctx, int fd, e_ws_closure_status status )
 {
-    printf( "connection dropped `%i`\n", fd );
+    printf( "connection dropped `%i` with status `%i`\n", fd, status );
 }
 
 void
@@ -122,13 +122,13 @@ websocket_on_open( void *ctx, int fd, const char *addr )
 }
 
 void
-websocket_on_close( void *ctx, const int fd )
+websocket_on_close( void *ctx, int fd, e_ws_closure_status status )
 {
-    printf( "connection dropped `%i`\n", fd );
+    printf( "connection dropped `%i` with status `%i`\n", fd, status );
 }
 
 void
-websocket_on_frame( void *ctx, int fd, e_ws_frame_opcode opcode, unsigned char *payload, const size_t size )
+websocket_on_frame( void *ctx, int fd, e_ws_frame_opcode opcode, unsigned char *payload, size_t size )
 {
     printf( "income frame `%i` :: opcode -> %d\n\t%s\n", fd, opcode, payload );
 }

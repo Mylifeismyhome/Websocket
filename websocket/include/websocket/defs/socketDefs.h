@@ -56,6 +56,29 @@ enum e_ws_endpoint_type : unsigned char
 };
 
 /**
+ * @enum e_ws_closure_status
+ * @brief RFC6455 Status codes indicating a reason for closure.
+ *
+ * This enum defines status codes as defined in RFC6455 to indicate a reason for closure.
+ */
+enum e_ws_closure_status : int
+{
+    closure_normal = 1000, /**< 1000 indicates a normal closure, meaning that the purpose for which the connection was established has been fulfilled. */
+    closure_going_away = 1001, /**< 1001 indicates that an endpoint is "going away", such as a server going down or a browser having navigated away from a page. */
+    closure_protocol_error = 1002, /**< 1002 indicates that an endpoint is terminating the connection due to a protocol error. */
+    closure_unsupported_data = 1003, /**< 1003 indicates that an endpoint is terminating the connection because it has received a type of data it cannot accept. */
+    closure_reserved_1004 = 1004, /**< Reserved for future use. */
+    closure_no_status_received = 1005, /**< 1005 is a reserved value to indicate that no status code was present. */
+    closure_abnormal = 1006, /**< 1006 is reserved to indicate the connection was closed abnormally without sending or receiving a Close control frame. */
+    closure_invalid_data = 1007, /**< 1007 indicates the connection is terminated due to data inconsistency, e.g., non-UTF-8 data within a text message. */
+    closure_policy_violation = 1008, /**< 1008 indicates the connection is terminated due to a policy violation. */
+    closure_message_too_big = 1009, /**< 1009 indicates the connection is terminated because the message was too large to process. */
+    closure_missing_extension = 1010, /**< 1010 indicates the client terminated the connection due to missing required extensions in the handshake response. */
+    closure_internal_error = 1011, /**< 1011 indicates the server terminated the connection due to an unexpected condition preventing fulfillment of the request. */
+    closure_tls_handshake_failed = 1015 /**< 1015 is reserved to indicate connection closure due to a failed TLS handshake, such as an unverifiable server certificate. */
+};
+
+/**
  * @struct ws_settings_t
  * @brief WebSocket settings
  *
