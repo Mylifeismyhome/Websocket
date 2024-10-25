@@ -53,6 +53,53 @@ SOFTWARE.
 #include <mbedtls/ssl_cache.h>
 #endif
 
+// Based on this one: http://www.zedwood.com/article/cpp-is-valid-utf8-string-function
+__forceinline bool
+utf8_check_is_valid( const char *str, int len )
+{
+    int n;
+    for ( int i = 0; i < len; ++i )
+    {
+        unsigned char c = ( unsigned char )str[ i ];
+        // if (c==0x09 || c==0x0a || c==0x0d || (0x20 <= c && c <= 0x7e) ) n = 0; // is_printable_ascii
+        if ( 0x00 <= c && c <= 0x7f )
+        {
+            n = 0; // 0bbbbbbb
+        }
+        else if ( ( c & 0xE0 ) == 0xC0 )
+        {
+            n = 1; // 110bbbbb
+        }
+        else if ( c == 0xed && i < ( len - 1 ) && ( ( unsigned char )str[ i + 1 ] & 0xa0 ) == 0xa0 )
+        {
+            return false; // U+d800 to U+dfff
+        }
+        else if ( ( c & 0xF0 ) == 0xE0 )
+        {
+            n = 2; // 1110bbbb
+        }
+        else if ( ( c & 0xF8 ) == 0xF0 )
+        {
+            n = 3; // 11110bbb
+            //} else if (($c & 0xFC) == 0xF8) { n=4; // 111110bb //byte 5, unnecessary in 4 byte UTF-8
+            //} else if (($c & 0xFE) == 0xFC) { n=5; // 1111110b //byte 6, unnecessary in 4 byte UTF-8
+        }
+        else
+        {
+            return false;
+        }
+
+        for ( int j = 0; j < n && i < len; ++j )
+        { // n bytes matching 10bbbbbb follow ?
+            if ( ( ++i == len ) || ( ( ( unsigned char )str[ i ] & 0xC0 ) != 0x80 ) )
+            {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 struct ssl_t
 {
     mbedtls_ssl_config context; /**< ssl settings context. */
@@ -800,6 +847,18 @@ c_websocket::impl_t::communicate( file_descriptor_context *ctx )
                                 switch ( opcode )
                                 {
                                     case e_ws_frame_opcode::opcode_text:
+                                    {
+                                        if ( !utf8_check_is_valid( reinterpret_cast< const char * >( ctx->frame.get_payload() ), static_cast<int>(ctx->frame.get_payload_size()) ) )
+                                        {
+                                            terminate( ctx, e_ws_closure_status::closure_invalid_data );
+                                            return;
+                                        }
+
+                                        std::thread( &c_websocket::impl_t::async_ws_frame, this, ctx->net.fd, std::move( ctx->frame ) ).detach();
+                                        ctx->frame = {};
+                                        break;
+                                    }
+
                                     case e_ws_frame_opcode::opcode_binary:
                                     {
                                         std::thread( &c_websocket::impl_t::async_ws_frame, this, ctx->net.fd, std::move( ctx->frame ) ).detach();
@@ -821,6 +880,7 @@ c_websocket::impl_t::communicate( file_descriptor_context *ctx )
                                     {
                                         ctx->reset_timer_pong();
                                         ctx->timer_ping( ping_interval );
+
                                         break;
                                     }
 
