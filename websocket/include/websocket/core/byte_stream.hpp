@@ -182,6 +182,9 @@ public:
     bool
     available() const;
 
+    bool
+    is_utf8() const;
+
 private:
     struct impl_t;
     impl_t *impl;

@@ -208,6 +208,12 @@ c_ws_frame::get_payload_size() const
     return impl->payload.size();
 }
 
+bool
+c_ws_frame::is_payload_utf8() const
+{
+    return impl->payload.is_utf8();
+}
+
 e_ws_frame_status
 c_ws_frame::write( c_byte_stream *output )
 {

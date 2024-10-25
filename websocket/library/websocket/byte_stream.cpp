@@ -89,6 +89,9 @@ struct c_byte_stream::impl_t
 
     unsigned char *
     pointer( size_t offset ) const;
+
+    bool
+    is_utf8() const;
 };
 
 bool
@@ -117,7 +120,7 @@ c_byte_stream::c_byte_stream()
 c_byte_stream::c_byte_stream( const c_byte_stream &other )
 {
     impl = new impl_t();
-    
+
     std::lock( impl->mutex, other.impl->mutex );
     std::lock_guard< std::recursive_mutex > lhs_lock( impl->mutex, std::adopt_lock );
     std::lock_guard< std::recursive_mutex > rhs_lock( other.impl->mutex, std::adopt_lock );
@@ -534,6 +537,68 @@ c_byte_stream::impl_t::pointer( size_t offset ) const
     }
 
     return const_cast< unsigned char * >( container.data() + offset );
+}
+
+bool
+c_byte_stream::impl_t::is_utf8() const
+{
+    if ( container.empty() )
+    {
+        return false;
+    }
+
+    std::size_t i = 0;
+    const std::size_t len = container.size();
+
+    while ( i < len )
+    {
+        unsigned char c = container[ i ];
+        int n = 0;
+
+        if ( c <= 0x7F )
+        {
+            // 1-byte ascii (0xxxxxxx)
+            n = 0;
+        }
+        else if ( ( c & 0xE0 ) == 0xC0 )
+        {
+            // 2-byte sequence (110xxxxx)
+            n = 1;
+        }
+        else if ( ( c & 0xF0 ) == 0xE0 )
+        {
+            // 3-byte sequence (1110xxxx)
+            n = 2;
+        }
+        else if ( ( c & 0xF8 ) == 0xF0 )
+        {
+            // 4-byte sequence (11110xxx)
+            n = 3;
+        }
+        else if ( c == 0xED && i + 1 < len && ( container[ i + 1 ] & 0xA0 ) == 0xA0 )
+        {
+            // invalid surrogate half
+            return false;
+        }
+        else
+        {
+            // invalid utf-8 start byte
+            return false;
+        }
+
+        // verify that the `n` continuation bytes start with 10xxxxxx
+        for ( int j = 0; j < n; ++j )
+        {
+            if ( ++i >= len || ( container[ i ] & 0xC0 ) != 0x80 )
+            {
+                return false;
+            }
+        }
+
+        ++i;
+    }
+
+    return true;
 }
 
 c_byte_stream::e_status
@@ -1009,4 +1074,10 @@ bool
 c_byte_stream::available() const
 {
     return size() > 0;
+}
+
+bool
+c_byte_stream::is_utf8() const
+{
+    impl->compare();
 }

@@ -155,6 +155,26 @@ public:
     size_t
     get_payload_size() const;
 
+    /**
+     * @brief Checks if the container's payload is valid UTF-8 encoded data.
+     *
+     * This function iterates over each byte in the `container` to verify if the
+     * sequence of bytes conforms to UTF-8 encoding standards. It handles both
+     * single-byte ASCII characters and multi-byte sequences, ensuring each
+     * follows UTF-8 encoding rules:
+     * - 1-byte ASCII (0xxxxxxx)
+     * - 2-byte sequences (110xxxxx 10xxxxxx)
+     * - 3-byte sequences (1110xxxx 10xxxxxx 10xxxxxx)
+     * - 4-byte sequences (11110xxx 10xxxxxx 10xxxxxx 10xxxxxx)
+     *
+     * Invalid UTF-8 patterns, such as surrogate halves or unexpected byte patterns,
+     * will result in a `false` return value.
+     *
+     * @return `true` if the payload is valid UTF-8; `false` otherwise.
+     */
+    bool
+    is_payload_utf8() const;
+
 private:
     struct impl_t;
     impl_t *impl;
