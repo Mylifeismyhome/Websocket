@@ -120,6 +120,8 @@ set(API
 
 set(CORE
 	websocket/library/websocket/lz77.cpp
+	websocket/library/websocket/huffman_code.cpp
+	websocket/library/websocket/deflate.cpp
     websocket/library/websocket/byte_stream.cpp
 	websocket/library/websocket/endian.cpp
 	websocket/library/websocket/handshake.cpp

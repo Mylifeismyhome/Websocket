@@ -140,9 +140,42 @@ websocket_on_error( void *ctx, const char *message )
 }
 #endif
 
+#include <websocket/core/lz77.hpp>
+
 int
 main()
 {
+    //{
+    //    std::unordered_map< unsigned char, std::string > huffmanCodes;
+
+
+    //    const char *test_input = "Hello, this is a test input for compression!";
+    //    size_t input_length = std::strlen( test_input );
+
+    //    unsigned char *compressed_output = nullptr;
+    //    int compressed_size = c_deflate::compress( reinterpret_cast< unsigned char * >( const_cast< char * >( test_input ) ), input_length, compressed_output, huffmanCodes );
+
+    //    std::cout << "Compressed size: " << compressed_size << " bytes" << std::endl;
+
+    //    // Output the compressed data as hex for verification
+    //    std::cout << "Compressed data (hex): ";
+    //    for ( int i = 0; i < compressed_size; ++i )
+    //    {
+    //        std::cout << std::hex << static_cast< int >( compressed_output[ i ] ) << " ";
+    //    }
+    //    std::cout << std::dec << std::endl; // Switch back to decimal
+
+    //    // Decompression
+    //    unsigned char *decompressed_output = nullptr;
+    //    int decompressed_size = c_deflate::decompress( compressed_output, compressed_size, decompressed_output, huffmanCodes );
+
+    //    std::cout << "Decompressed size: " << decompressed_size << " bytes" << std::endl;
+    //    std::cout << "Decompressed data: " << std::string( reinterpret_cast< char * >( decompressed_output ), decompressed_size ) << std::endl;
+
+    //    delete[] compressed_output; // Clean up the compressed output buffer
+    //    delete[] decompressed_output; // Clean up the decompressed output buffer
+    //}
+
 #if defined( _WIN32 ) && !defined( EFIX64 ) && !defined( EFI32 )
     if ( !SetConsoleCtrlHandler( win_console_handler, TRUE ) )
     {
