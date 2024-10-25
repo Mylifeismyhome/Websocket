@@ -65,7 +65,7 @@ class WEBSOCKET_API c_ws_frame final
      * @internal
      */
     e_ws_frame_status
-    read( c_byte_stream *input, size_t limit = 0 );
+    read( c_byte_stream *input, size_t limit );
 
 public:
     c_ws_frame();

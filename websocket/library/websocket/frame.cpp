@@ -74,7 +74,7 @@ struct c_ws_frame::impl_t
     encode( e_ws_frame_opcode opcode, bool mask, unsigned char *mask_key, c_byte_stream *input, c_byte_stream *output );
 
     static e_ws_frame_status
-    decode( c_byte_stream *input, c_byte_stream *output, e_ws_frame_opcode &opcode, size_t limit = 0 );
+    decode( c_byte_stream *input, c_byte_stream *output, e_ws_frame_opcode &opcode, size_t limit );
 
     impl_t()
     {
@@ -478,12 +478,9 @@ c_ws_frame::impl_t::decode( c_byte_stream *input, c_byte_stream *output, e_ws_fr
         offset += 8;
     }
 
-    if ( limit != 0 )
+    if ( ( output->size() + payload_length ) > limit )
     {
-        if ( ( output->size() + payload_length ) > limit )
-        {
-            return e_ws_frame_status::status_message_too_big;
-        }
+        return e_ws_frame_status::status_message_too_big;
     }
 
     if ( input->size() < offset )
