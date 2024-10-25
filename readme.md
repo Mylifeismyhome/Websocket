@@ -1,6 +1,4 @@
-# WebSocket Library
-
-## Overview
+## Description
 
 This repository implements WebSocket functionality based on RFC6455, providing both C and C++ APIs for seamless integration into diverse projects.
 The library is designed to facilitate secure and unsecured WebSocket connections, utilizing [mbedTLS](https://tls.mbed.org/) for secure communication. 
