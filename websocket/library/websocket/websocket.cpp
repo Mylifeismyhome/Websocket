@@ -193,6 +193,8 @@ struct c_websocket::impl_t
     unsigned int ping_interval;
     unsigned int ping_timeout;
 
+    size_t message_limit;
+
     bool
     try_lock() const;
 
@@ -235,36 +237,42 @@ struct c_websocket::impl_t
     void
     async_ws_frame( int fd, c_ws_frame frame );
 
-    impl_t()
-    {
-        instance = nullptr;
+    impl_t();
 
-        mode = e_ws_mode::mode_unsecured;
-
-        read_timeout = 0;
-        poll_timeout = 0;
-
-        fd_limit = 0;
-
-        last_status = 0;
-        last_error = "";
-
-        ssl = {};
-
-        endpoint = e_ws_endpoint_type::endpoint_server;
-
-        host = "";
-        allowed_origin = "";
-
-        ping_interval = 60 * 1000;
-        ping_timeout = 30 * 1000;
-    }
-
-    ~impl_t()
-    {
-        fd_map.clear();
-    }
+    ~impl_t();
 };
+
+c_websocket::impl_t::impl_t()
+{
+    instance = nullptr;
+
+    mode = e_ws_mode::mode_unsecured;
+
+    read_timeout = 0;
+    poll_timeout = 0;
+
+    fd_limit = 0;
+
+    last_status = 0;
+    last_error = "";
+
+    ssl = {};
+
+    endpoint = e_ws_endpoint_type::endpoint_server;
+
+    host = "";
+    allowed_origin = "";
+
+    ping_interval = 60 * 1000;
+    ping_timeout = 30 * 1000;
+
+    message_limit = 4 * 1024 * 1024; // 4 mb in bytes
+}
+
+c_websocket::impl_t::~impl_t()
+{
+    fd_map.clear();
+}
 
 ssl_t::ssl_t()
 {
@@ -575,6 +583,8 @@ c_websocket::impl_t::setup( ws_settings_t *settings )
     ping_interval = settings->ping_interval;
     ping_timeout = settings->ping_timeout;
 
+    message_limit = settings->message_limit;
+
     return e_ws_status::status_ok;
 }
 
@@ -796,15 +806,11 @@ c_websocket::impl_t::communicate( file_descriptor_context *ctx )
                             case e_ws_con_state::open:
                             case e_ws_con_state::closing:
                             {
-                                e_ws_frame_status status = ctx->frame.read( &ctx->stream.input );
+                                e_ws_frame_status status = ctx->frame.read( &ctx->stream.input, message_limit );
 
                                 switch ( status )
                                 {
                                     case e_ws_frame_status::status_incomplete:
-                                    {
-                                        return;
-                                    }
-
                                     case e_ws_frame_status::status_fragment:
                                     {
                                         break;
@@ -883,6 +889,12 @@ c_websocket::impl_t::communicate( file_descriptor_context *ctx )
                                         }
 
                                         break;
+                                    }
+
+                                    case e_ws_frame_status::status_message_too_big:
+                                    {
+                                        close( ctx, e_ws_closure_status::closure_message_too_big );
+                                        return;
                                     }
 
                                     case e_ws_frame_status::status_error:
@@ -1121,7 +1133,7 @@ c_websocket::impl_t::operate()
         it = fd_map.erase( it );
     }
 
-    std::size_t fd_count = fd_map.size();
+    size_t fd_count = fd_map.size();
 
     for ( auto it = fd_map.begin(); it != fd_map.end(); ++it )
     {

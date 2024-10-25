@@ -107,6 +107,8 @@ typedef struct
 
     unsigned int ping_interval; /**< @brief Interval in milliseconds between WebSocket ping messages to maintain connection. */
     unsigned int ping_timeout; /**< @brief Timeout in milliseconds to wait for a pong message after sending a ping. */
+
+    size_t message_limit; /**< @brief Message limit in bytes. (default 4mb) */
 } ws_settings_t;
 
 /**
@@ -147,6 +149,8 @@ void inline ws_settings_init( ws_settings_t *settings )
 
     settings->ping_interval = 60 * 1000;
     settings->ping_timeout = 30 * 1000;
+
+    settings->message_limit = 4 * 1024 * 1024; // 4mb in bytes
 }
 
 /**

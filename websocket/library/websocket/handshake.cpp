@@ -43,7 +43,7 @@ SOFTWARE.
  * @param s A pointer to a null-terminated string.
  * @return The length of the string (not including the null terminator).
  */
-constexpr std::size_t
+constexpr size_t
 constexpr_strlen( const char *s )
 {
     return *s ? 1 + constexpr_strlen( s + 1 ) : 0;
@@ -83,7 +83,7 @@ static constexpr const char HTTP_HEADER[] = "HTTP/1.1";
  * This constant holds the length of the HTTP_HEADER string
  * calculated at compile time.
  */
-static constexpr std::size_t HTTP_HEADER_SIZE = constexpr_strlen( HTTP_HEADER );
+static constexpr size_t HTTP_HEADER_SIZE = constexpr_strlen( HTTP_HEADER );
 
 /**
  * @brief Represents the WebSocket magic GUID.
@@ -99,7 +99,7 @@ static constexpr const char WS_MAGIC[] = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
  * This constant holds the length of the WS_MAGIC string
  * calculated at compile time.
  */
-static constexpr std::size_t WS_MAGIC_SIZE = constexpr_strlen( WS_MAGIC );
+static constexpr size_t WS_MAGIC_SIZE = constexpr_strlen( WS_MAGIC );
 
 std::string
 trim( const std::string &s )

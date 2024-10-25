@@ -74,7 +74,7 @@ struct c_ws_frame::impl_t
     encode( e_ws_frame_opcode opcode, bool mask, unsigned char *mask_key, c_byte_stream *input, c_byte_stream *output );
 
     static e_ws_frame_status
-    decode( c_byte_stream *input, c_byte_stream *output, e_ws_frame_opcode &opcode );
+    decode( c_byte_stream *input, c_byte_stream *output, e_ws_frame_opcode &opcode, size_t limit = 0 );
 
     impl_t()
     {
@@ -234,11 +234,11 @@ c_ws_frame::write( c_byte_stream *output )
 }
 
 e_ws_frame_status
-c_ws_frame::read( c_byte_stream *input )
+c_ws_frame::read( c_byte_stream *input, size_t limit )
 {
     e_ws_frame_opcode out_opcode = e_ws_frame_opcode::opcode_binary;
 
-    e_ws_frame_status status = c_ws_frame::impl_t::decode( input, &impl->payload, out_opcode );
+    e_ws_frame_status status = c_ws_frame::impl_t::decode( input, &impl->payload, out_opcode, limit );
 
     impl->opcode = out_opcode;
 
@@ -375,7 +375,7 @@ c_ws_frame::impl_t::encode( e_ws_frame_opcode opcode, bool mask, unsigned char *
 }
 
 e_ws_frame_status
-c_ws_frame::impl_t::decode( c_byte_stream *input, c_byte_stream *output, e_ws_frame_opcode &opcode )
+c_ws_frame::impl_t::decode( c_byte_stream *input, c_byte_stream *output, e_ws_frame_opcode &opcode, size_t limit )
 {
     if ( !input || !output )
     {
@@ -476,6 +476,14 @@ c_ws_frame::impl_t::decode( c_byte_stream *input, c_byte_stream *output, e_ws_fr
 
         // move by 8-bytes
         offset += 8;
+    }
+
+    if ( limit != 0 )
+    {
+        if ( ( output->size() + payload_length ) > limit )
+        {
+            return e_ws_frame_status::status_message_too_big;
+        }
     }
 
     if ( input->size() < offset )

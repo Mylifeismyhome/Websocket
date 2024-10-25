@@ -547,8 +547,8 @@ c_byte_stream::impl_t::is_utf8() const
         return false;
     }
 
-    std::size_t i = 0;
-    const std::size_t len = container.size();
+    size_t i = 0;
+    const size_t len = container.size();
 
     while ( i < len )
     {
