@@ -5,7 +5,7 @@
 #include <map>
 #include <vector>
 
-class c_huffman_code
+class c_huffman
 {
     struct Node
     {

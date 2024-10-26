@@ -1,10 +1,10 @@
-#include <websocket/core/huffman_code.hpp>
+#include <websocket/core/huffman.hpp>
 
 #include <queue>
 #include <stack>
 
 void
-c_huffman_code::huffman_build_frequency_table( unsigned char *input, size_t length, std::map< unsigned char, size_t > &frequency_table )
+c_huffman::huffman_build_frequency_table( unsigned char *input, size_t length, std::map< unsigned char, size_t > &frequency_table )
 {
     for ( size_t i = 0; i < length; ++i )
     {
@@ -21,8 +21,8 @@ c_huffman_code::huffman_build_frequency_table( unsigned char *input, size_t leng
     }
 }
 
-c_huffman_code::Node *
-c_huffman_code::huffman_build_tree( const std::map< unsigned char, size_t > &freqTable )
+c_huffman::Node *
+c_huffman::huffman_build_tree( const std::map< unsigned char, size_t > &freqTable )
 {
     // Step 1: Create a priority queue to store nodes based on frequency
     std::priority_queue< Node *, std::vector< Node * >, Compare > minHeap;
@@ -57,7 +57,7 @@ c_huffman_code::huffman_build_tree( const std::map< unsigned char, size_t > &fre
 }
 
 void
-c_huffman_code::huffman_build_code_table( Node *root, std::map< unsigned char, std::vector< bool > > &huffman_bits )
+c_huffman::huffman_build_code_table( Node *root, std::map< unsigned char, std::vector< bool > > &huffman_bits )
 {
     if ( !root )
     {
@@ -96,7 +96,7 @@ c_huffman_code::huffman_build_code_table( Node *root, std::map< unsigned char, s
 }
 
 void
-c_huffman_code::huffman_release_tree( Node *node )
+c_huffman::huffman_release_tree( Node *node )
 {
     if ( node == nullptr )
     {
@@ -109,8 +109,8 @@ c_huffman_code::huffman_release_tree( Node *node )
     delete node;
 }
 
-c_huffman_code::e_status
-c_huffman_code::encode( unsigned char *input, size_t input_length, unsigned char *&output, size_t &output_length, size_t &output_bits, std::map< unsigned char, size_t > &frequency_table )
+c_huffman::e_status
+c_huffman::encode( unsigned char *input, size_t input_length, unsigned char *&output, size_t &output_length, size_t &output_bits, std::map< unsigned char, size_t > &frequency_table )
 {
     huffman_build_frequency_table( input, input_length, frequency_table );
 
@@ -177,8 +177,8 @@ c_huffman_code::encode( unsigned char *input, size_t input_length, unsigned char
     return e_status::status_ok;
 }
 
-c_huffman_code::e_status
-c_huffman_code::decode( unsigned char *input, size_t input_length, size_t input_bits, unsigned char *&output, size_t &output_length, std::map< unsigned char, size_t > frequency_table )
+c_huffman::e_status
+c_huffman::decode( unsigned char *input, size_t input_length, size_t input_bits, unsigned char *&output, size_t &output_length, std::map< unsigned char, size_t > frequency_table )
 {
     Node *root = huffman_build_tree( frequency_table );
     if ( !root )
