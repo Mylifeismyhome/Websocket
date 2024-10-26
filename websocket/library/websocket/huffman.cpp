@@ -24,29 +24,29 @@ struct c_huffman::impl_t
     };
 
     static void
-    huffman_build_frequency_table( unsigned char *input, size_t length, std::map< unsigned char, size_t > &frequency_table );
+    huffman_build_frequency_table( const std::vector< unsigned char > &input, std::map< unsigned char, size_t > &frequency );
 
     static Node *
-    huffman_build_tree( const std::map< unsigned char, size_t > &freqTable );
+    huffman_build_tree( const std::map< unsigned char, size_t > &frequency );
 
-    static void
-    huffman_build_code_table( Node *root, std::map< unsigned char, std::vector< bool > > &huffman_bits );
+    static c_huffman::e_status
+    huffman_build_bits_table( Node *root, std::map< unsigned char, std::vector< bool > > &huffman_bits );
 
     static void
     huffman_release_tree( Node *node );
 };
 
 void
-c_huffman::impl_t::huffman_build_frequency_table( unsigned char *input, size_t length, std::map< unsigned char, size_t > &frequency_table )
+c_huffman::impl_t::huffman_build_frequency_table( const std::vector< unsigned char > &input, std::map< unsigned char, size_t > &frequency )
 {
-    for ( size_t i = 0; i < length; ++i )
+    for ( size_t i = 0; i < input.size(); ++i )
     {
-        unsigned char c = input[ i ];
+        unsigned char character = input.at( i );
 
-        auto it = frequency_table.find( c );
-        if ( it == frequency_table.end() )
+        std::map< unsigned char, size_t >::iterator it = frequency.find( character );
+        if ( it == frequency.end() )
         {
-            frequency_table.emplace( std::make_pair( c, 1 ) );
+            frequency.emplace( std::make_pair( character, 1 ) );
             continue;
         }
 
@@ -55,77 +55,71 @@ c_huffman::impl_t::huffman_build_frequency_table( unsigned char *input, size_t l
 }
 
 c_huffman::impl_t::Node *
-c_huffman::impl_t::huffman_build_tree( const std::map< unsigned char, size_t > &freqTable )
+c_huffman::impl_t::huffman_build_tree( const std::map< unsigned char, size_t > &frequency )
 {
-    // Step 1: Create a priority queue to store nodes based on frequency
-    std::priority_queue< Node *, std::vector< Node * >, Compare > minHeap;
+    std::priority_queue< Node *, std::vector< Node * >, Compare > min_heap;
 
-    // Step 2: Create leaf nodes for each character and add them to the priority queue
-    for ( const auto &entry : freqTable )
+    for ( std::map< unsigned char, size_t >::const_iterator it = frequency.begin(); it != frequency.end(); ++it )
     {
-        minHeap.push( new Node( entry.first, entry.second ) );
+        min_heap.emplace( new Node( it->first, it->second ) );
     }
 
-    // Step 3: Build the Huffman Tree
-    while ( minHeap.size() > 1 )
+    while ( min_heap.size() > 1 )
     {
-        // Remove the two nodes with the lowest frequency
-        Node *left = minHeap.top();
-        minHeap.pop();
+        Node *left = min_heap.top();
+        min_heap.pop();
 
-        Node *right = minHeap.top();
-        minHeap.pop();
+        Node *right = min_heap.top();
+        min_heap.pop();
 
-        // Create a new internal node with frequency equal to the sum of the two nodes' frequencies
-        Node *parent = new Node( '\0', left->frequency + right->frequency ); // '\0' as placeholder for internal nodes
+        Node *parent = new Node( 0, left->frequency + right->frequency );
         parent->left = left;
         parent->right = right;
 
-        // Add the new node to the priority queue
-        minHeap.push( parent );
+        min_heap.push( parent );
     }
 
-    // Step 4: The remaining node is the root of the Huffman Tree
-    return minHeap.empty() ? nullptr : minHeap.top();
+    return min_heap.empty() ? nullptr : min_heap.top();
 }
 
-void
-c_huffman::impl_t::huffman_build_code_table( Node *root, std::map< unsigned char, std::vector< bool > > &huffman_bits )
+c_huffman::e_status
+c_huffman::impl_t::huffman_build_bits_table( Node *root, std::map< unsigned char, std::vector< bool > > &huffman_bits )
 {
     if ( !root )
     {
-        return;
+        return e_status::status_error;
     }
 
     std::stack< std::pair< Node *, std::vector< bool > > > stack;
-    stack.push( { root, {} } );
+    stack.push( std::make_pair( root, std::vector< bool >() ) );
 
     while ( !stack.empty() )
     {
         Node *node = stack.top().first;
-        std::vector< bool > codes = stack.top().second;
+        std::vector< bool > bits = stack.top().second;
         stack.pop();
 
-        // If the node is a leaf, store the accumulated code
         if ( !node->left && !node->right )
         {
-            huffman_bits[ node->character ] = codes;
+            huffman_bits[ node->character ] = bits;
         }
 
-        // Push right and left children to the stack with a separate copy of the codes vector
         if ( node->right )
         {
-            auto right_codes = codes; // Copy of codes for right child
-            right_codes.push_back( true );
-            stack.push( { node->right, right_codes } );
+            std::vector< bool > right_bits = bits;
+            right_bits.push_back( true );
+            stack.push( { node->right, right_bits } );
         }
+
         if ( node->left )
         {
-            auto left_codes = codes; // Copy of codes for left child
-            left_codes.push_back( false );
-            stack.push( { node->left, left_codes } );
+            std::vector< bool > left_bits = bits;
+            left_bits.push_back( false );
+            stack.push( { node->left, left_bits } );
         }
     }
+
+    return e_status::status_ok;
 }
 
 void
@@ -143,9 +137,9 @@ c_huffman::impl_t::huffman_release_tree( Node *node )
 }
 
 c_huffman::e_status
-c_huffman::encode( unsigned char *input, size_t input_length, unsigned char *&output, size_t &output_length, size_t &output_bits, std::map< unsigned char, size_t > &frequency_table )
+c_huffman::encode( const std::vector< unsigned char > &input, std::vector< unsigned char > &output, size_t &bit_count, std::map< unsigned char, size_t > &frequency_table )
 {
-    c_huffman::impl_t::huffman_build_frequency_table( input, input_length, frequency_table );
+    c_huffman::impl_t::huffman_build_frequency_table( input, frequency_table );
 
     c_huffman::impl_t::Node *root = c_huffman::impl_t::huffman_build_tree( frequency_table );
     if ( !root )
@@ -153,43 +147,42 @@ c_huffman::encode( unsigned char *input, size_t input_length, unsigned char *&ou
         return e_status::status_error;
     }
 
-    std::map< unsigned char, std::vector< bool > > huffman_bits;
-    c_huffman::impl_t::huffman_build_code_table( root, huffman_bits );
-
-    for ( size_t i = 0; i < input_length; ++i )
+    std::map< unsigned char, std::vector< bool > > bits_table;
+    if ( c_huffman::impl_t::huffman_build_bits_table( root, bits_table ) != e_status::status_ok )
     {
-        unsigned char byte = input[ i ];
-
-        auto it = huffman_bits.find( byte );
-        if ( it == huffman_bits.end() )
-        {
-            c_huffman::impl_t::huffman_release_tree( root );
-            return e_status::status_error;
-        }
-
-        std::vector< bool > bits = huffman_bits.at( byte );
-
-        output_bits += bits.size();
+        return e_status::status_error;
     }
 
-    output_length = ( output_bits + 7 ) / 8;
-
-    output = new unsigned char[ output_length + 1 ];
-    std::memset( output, 0, output_length );
-    output[ output_length ] = 0;
-
-    for ( size_t i = 0, bit_index = 0; i < input_length; ++i )
+    for ( size_t i = 0; i < input.size(); ++i )
     {
-        unsigned char byte = input[ i ];
+        unsigned char character = input[ i ];
 
-        auto it = huffman_bits.find( byte );
-        if ( it == huffman_bits.end() )
+        std::map< unsigned char, std::vector< bool > >::iterator it = bits_table.find( character );
+        if ( it == bits_table.end() )
         {
             c_huffman::impl_t::huffman_release_tree( root );
             return e_status::status_error;
         }
 
-        std::vector< bool > bits = huffman_bits.at( byte );
+        std::vector< bool > bits = bits_table[ character ];
+
+        bit_count += bits.size();
+    }
+
+    output.resize( ( ( bit_count + 7 ) / 8 ) );
+
+    for ( size_t i = 0, bit_index = 0; i < input.size(); ++i )
+    {
+        unsigned char character = input[ i ];
+
+        std::map< unsigned char, std::vector< bool > >::iterator it = bits_table.find( character );
+        if ( it == bits_table.end() )
+        {
+            c_huffman::impl_t::huffman_release_tree( root );
+            return e_status::status_error;
+        }
+
+        std::vector< bool > bits = bits_table[ character ];
 
         for ( bool bit : bits )
         {
@@ -211,7 +204,7 @@ c_huffman::encode( unsigned char *input, size_t input_length, unsigned char *&ou
 }
 
 c_huffman::e_status
-c_huffman::decode( unsigned char *input, size_t input_length, size_t input_bits, unsigned char *&output, size_t &output_length, std::map< unsigned char, size_t > frequency_table )
+c_huffman::decode( const std::vector< unsigned char > &input, std::vector< unsigned char > &output, size_t bit_count, std::map< unsigned char, size_t > frequency_table )
 {
     c_huffman::impl_t::Node *root = c_huffman::impl_t::huffman_build_tree( frequency_table );
     if ( !root )
@@ -221,7 +214,9 @@ c_huffman::decode( unsigned char *input, size_t input_length, size_t input_bits,
 
     c_huffman::impl_t::Node *node = root;
 
-    for ( size_t bits = 0; bits < input_bits; ++bits )
+    size_t output_length = 0;
+
+    for ( size_t bits = 0; bits < bit_count; ++bits )
     {
         size_t byte_index = bits / 8;
         size_t bit_position = 7 - ( bits % 8 );
@@ -243,11 +238,9 @@ c_huffman::decode( unsigned char *input, size_t input_length, size_t input_bits,
         }
     }
 
-    output = new unsigned char[ output_length + 1 ];
-    std::memset( output, 0, output_length );
-    output[ output_length ] = 0;
+    output.resize( output_length );
 
-    for ( size_t bits = 0, i = 0; bits < input_bits; ++bits )
+    for ( size_t bits = 0, i = 0; bits < bit_count; ++bits )
     {
         size_t byte_index = bits / 8;
         size_t bit_position = 7 - ( bits % 8 );
