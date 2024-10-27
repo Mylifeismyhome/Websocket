@@ -3,9 +3,7 @@
 #endif
 
 #include <csignal>
-#include <cstring>
-#include <memory>
-#include <stdio.h>
+#include <cstdio>
 
 #ifdef WEBSOCKET_EXAMPLE_C_API
 #ifndef WEBSOCKET_C_API
@@ -140,119 +138,9 @@ websocket_on_error( void *ctx, const char *message )
 }
 #endif
 
-#include <string>
-#include <websocket/core/huffman.hpp>
-#include <websocket/core/lzss.hpp>
-#include <websocket/core/flate.hpp>
-
 int
 main()
 {
-    printf( "lzss test\n" );
-    {
-        std::string message = "AAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAA";
-
-        std::vector< unsigned char > input( message.begin(), message.end() );
-
-        printf( "original message: %s\n", input.data() );
-        printf( "original length: %llu\n", input.size() );
-
-        std::vector< unsigned char > output;
-        std::map< unsigned char, size_t > frequency_table;
-
-        c_lzss::compress( input, output );
-
-        printf( "compressed length: %llu\n", output.size() );
-
-        std::vector< unsigned char > dec;
-
-        c_lzss::decompress( output, dec, input.size() );
-
-        printf( "decompressed message: %s\n", dec.data() );
-        printf( "decompressed length: %llu\n", dec.size() );
-    }
-
-    printf( "huffman test\n" );
-    {
-        std::string message = "AAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAA";
-
-        std::vector< unsigned char > input( message.begin(), message.end() );
-
-        printf( "original message: %s\n", input.data() );
-        printf( "original length: %llu\n", input.size() );
-
-        std::vector< unsigned char > output;
-
-        size_t bit_count = 0;
-
-        std::map< unsigned char, size_t > frequency_table;
-
-        c_huffman::encode( input, output, bit_count, frequency_table );
-
-        printf( "encoded length: %llu\n", output.size() );
-
-        std::vector< unsigned char > dec;
-
-        c_huffman::decode( output, dec, bit_count, frequency_table );
-
-        printf( "decoded message: %s\n", dec.data() );
-        printf( "decoded length: %llu\n", dec.size() );
-    }
-
-    printf( "flate test\n" );
-    {
-        std::string message = "AAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAA";
-
-        std::vector< unsigned char > input( message.begin(), message.end() );
-
-        printf( "original message: %s\n", input.data() );
-        printf( "original length: %llu\n", input.size() );
-
-        std::vector< unsigned char > output;
-
-        c_flate::inflate( input, output );
-
-        printf( "compressed length: %llu\n", output.size() );
-
-        std::vector< unsigned char > dec;
-
-        c_flate::deflate( output, dec );
-
-        printf( "decoded message: %s\n", dec.data() );
-        printf( "decoded length: %llu\n", dec.size() );
-    }
-
-    //{
-    //    std::unordered_map< unsigned char, std::string > huffmanCodes;
-
-
-    //    const char *test_input = "Hello, this is a test input for compression!";
-    //    size_t input_length = std::strlen( test_input );
-
-    //    unsigned char *compressed_output = nullptr;
-    //    int compressed_size = c_deflate::compress( reinterpret_cast< unsigned char * >( const_cast< char * >( test_input ) ), input_length, compressed_output, huffmanCodes );
-
-    //    std::cout << "Compressed size: " << compressed_size << " bytes" << std::endl;
-
-    //    // Output the compressed data as hex for verification
-    //    std::cout << "Compressed data (hex): ";
-    //    for ( int i = 0; i < compressed_size; ++i )
-    //    {
-    //        std::cout << std::hex << static_cast< int >( compressed_output[ i ] ) << " ";
-    //    }
-    //    std::cout << std::dec << std::endl; // Switch back to decimal
-
-    //    // Decompression
-    //    unsigned char *decompressed_output = nullptr;
-    //    int decompressed_size = c_deflate::decompress( compressed_output, compressed_size, decompressed_output, huffmanCodes );
-
-    //    std::cout << "Decompressed size: " << decompressed_size << " bytes" << std::endl;
-    //    std::cout << "Decompressed data: " << std::string( reinterpret_cast< char * >( decompressed_output ), decompressed_size ) << std::endl;
-
-    //    delete[] compressed_output; // Clean up the compressed output buffer
-    //    delete[] decompressed_output; // Clean up the decompressed output buffer
-    //}
-
 #if defined( _WIN32 ) && !defined( EFIX64 ) && !defined( EFI32 )
     if ( !SetConsoleCtrlHandler( win_console_handler, TRUE ) )
     {
