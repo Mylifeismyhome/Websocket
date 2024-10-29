@@ -51,7 +51,7 @@ handle_exit()
 
 #if defined( _WIN32 ) && !defined( EFIX64 ) && !defined( EFI32 )
 BOOL WINAPI
-win_console_handler( DWORD eventType )
+win_console_handler( const DWORD eventType )
 {
     switch ( eventType )
     {
@@ -69,7 +69,7 @@ win_console_handler( DWORD eventType )
 #endif
 
 void
-exit_handler( int signal_num )
+exit_handler( const int signal_num )
 {
     handle_exit();
     std::exit( signal_num );
