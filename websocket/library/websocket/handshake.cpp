@@ -237,7 +237,7 @@ c_ws_handshake::secret( const std::string &input, std::string &output )
 }
 
 c_ws_handshake::e_status
-c_ws_handshake::create( const char *host, const char *origin, const char *channel, c_byte_stream *output, std::string &out_accept_key )
+c_ws_handshake::create( const char *host, const char *origin, const char *channel, const c_byte_stream *output, std::string &out_accept_key )
 {
     if ( !output )
     {
@@ -297,7 +297,7 @@ c_ws_handshake::create( const char *host, const char *origin, const char *channe
 }
 
 c_ws_handshake::e_status
-c_ws_handshake::client( const char *accept_key, c_byte_stream *input, c_byte_stream *output )
+c_ws_handshake::client( const char *accept_key, const c_byte_stream *input, c_byte_stream *output )
 {
     if ( !output )
     {
@@ -386,7 +386,7 @@ c_ws_handshake::client( const char *accept_key, c_byte_stream *input, c_byte_str
 }
 
 c_ws_handshake::e_status
-c_ws_handshake::server( const char *host, const char *origin, c_byte_stream *input, c_byte_stream *output )
+c_ws_handshake::server( const char *host, const char *origin, const c_byte_stream *input, c_byte_stream *output )
 {
     if ( !output )
     {

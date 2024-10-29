@@ -42,50 +42,50 @@ struct c_byte_stream::impl_t
     void
     unlock() const;
 
-    c_byte_stream::e_status
+    e_status
     push( unsigned char *source, size_t size );
 
-    c_byte_stream::e_status
+    e_status
     push_back( unsigned char *source, size_t size );
 
-    c_byte_stream::e_status
+    e_status
     pull( unsigned char *destination, size_t &size, size_t offset );
 
-    c_byte_stream::e_status
+    e_status
     pull_back( unsigned char *destination, size_t &size, size_t offset );
 
-    c_byte_stream::e_status
-    move( c_byte_stream *destination, size_t size, size_t offset );
+    e_status
+    move( const c_byte_stream *destination, size_t size, size_t offset );
 
-    c_byte_stream::e_status
-    copy( unsigned char *destination, size_t size, size_t *available, size_t offset );
+    e_status
+    copy( unsigned char *destination, size_t size, size_t *available, size_t offset ) const;
 
-    c_byte_stream::e_status
+    e_status
     pop( size_t size );
 
-    c_byte_stream::e_status
+    e_status
     pop_back( size_t size );
 
-    c_byte_stream::e_status
+    e_status
     erase( size_t start, size_t size );
 
     void
     flush();
 
     int
-    compare( unsigned char *pattern, size_t size, size_t offset );
+    compare( const unsigned char *pattern, size_t size, size_t offset ) const;
 
     size_t
     index_of( int val, size_t offset );
 
     size_t
-    index_of( unsigned char *pattern, size_t size, size_t offset );
+    index_of( const unsigned char *pattern, size_t size, size_t offset ) const;
 
     size_t
-    index_of_back( int val, size_t offset );
+    index_of_back( int val, size_t offset ) const;
 
     size_t
-    index_of_back( unsigned char *pattern, size_t size, size_t offset );
+    index_of_back( const unsigned char *pattern, size_t size, size_t offset ) const;
 
     unsigned char *
     pointer( size_t offset ) const;
@@ -112,12 +112,14 @@ c_byte_stream::impl_t::unlock() const
     mutex.unlock();
 }
 
-c_byte_stream::c_byte_stream()
+c_byte_stream::
+c_byte_stream()
 {
     impl = new impl_t();
 }
 
-c_byte_stream::c_byte_stream( const c_byte_stream &other )
+c_byte_stream::
+c_byte_stream( const c_byte_stream &other )
 {
     impl = new impl_t();
 
@@ -145,7 +147,8 @@ c_byte_stream::operator=( const c_byte_stream &other )
     return *this;
 }
 
-c_byte_stream::c_byte_stream( c_byte_stream &&other ) noexcept
+c_byte_stream::
+c_byte_stream( c_byte_stream &&other ) noexcept
 {
     impl = other.impl;
     other.impl = nullptr;
@@ -165,7 +168,8 @@ c_byte_stream::operator=( c_byte_stream &&other ) noexcept
     return *this;
 }
 
-c_byte_stream::~c_byte_stream()
+c_byte_stream::~
+c_byte_stream()
 {
     if ( impl )
     {
@@ -175,16 +179,20 @@ c_byte_stream::~c_byte_stream()
 }
 
 c_byte_stream &
-c_byte_stream::operator<<( unsigned char value )
+c_byte_stream::operator<<( const unsigned char value )
 {
-    push_back( value );
+    if ( push_back( value ) != e_status::ok )
+    {
+        return *this;
+    }
+
     return *this;
 }
 
 c_byte_stream &
 c_byte_stream::operator<<( const char *value )
 {
-    size_t size = std::strlen( value );
+    const size_t size = std::strlen( value );
     push_back( reinterpret_cast< unsigned char * >( const_cast< char * >( value ) ), size );
     return *this;
 }
@@ -192,13 +200,13 @@ c_byte_stream::operator<<( const char *value )
 c_byte_stream &
 c_byte_stream::operator<<( unsigned char *value )
 {
-    size_t size = std::strlen( reinterpret_cast< const char * >( value ) );
+    const size_t size = std::strlen( reinterpret_cast< const char * >( value ) );
     push_back( value, size );
     return *this;
 }
 
 void
-c_byte_stream::close()
+c_byte_stream::close() const
 {
     impl->wait_lock();
 
@@ -208,7 +216,7 @@ c_byte_stream::close()
 }
 
 void
-c_byte_stream::resize( size_t size )
+c_byte_stream::resize( const size_t size ) const
 {
     impl->wait_lock();
 
@@ -218,7 +226,7 @@ c_byte_stream::resize( size_t size )
 }
 
 c_byte_stream::e_status
-c_byte_stream::impl_t::push( unsigned char *source, size_t size )
+c_byte_stream::impl_t::push( unsigned char *source, const size_t size )
 {
     try
     {
@@ -226,18 +234,18 @@ c_byte_stream::impl_t::push( unsigned char *source, size_t size )
     }
     catch ( const std::bad_alloc & )
     {
-        return c_byte_stream::e_status::out_of_memory;
+        return e_status::out_of_memory;
     }
     catch ( ... )
     {
-        return c_byte_stream::e_status::error;
+        return e_status::error;
     }
 
-    return c_byte_stream::e_status::ok;
+    return e_status::ok;
 }
 
 c_byte_stream::e_status
-c_byte_stream::impl_t::push_back( unsigned char *source, size_t size )
+c_byte_stream::impl_t::push_back( unsigned char *source, const size_t size )
 {
     try
     {
@@ -245,22 +253,22 @@ c_byte_stream::impl_t::push_back( unsigned char *source, size_t size )
     }
     catch ( const std::bad_alloc & )
     {
-        return c_byte_stream::e_status::out_of_memory;
+        return e_status::out_of_memory;
     }
     catch ( ... )
     {
-        return c_byte_stream::e_status::error;
+        return e_status::error;
     }
 
-    return c_byte_stream::e_status::ok;
+    return e_status::ok;
 }
 
 c_byte_stream::e_status
-c_byte_stream::impl_t::pull( unsigned char *destination, size_t &size, size_t offset )
+c_byte_stream::impl_t::pull( unsigned char *destination, size_t &size, const size_t offset )
 {
     if ( offset >= container.size() )
     {
-        return c_byte_stream::e_status::out_of_bound;
+        return e_status::out_of_bound;
     }
 
     size = std::min( size, container.size() - offset );
@@ -271,7 +279,7 @@ c_byte_stream::impl_t::pull( unsigned char *destination, size_t &size, size_t of
     }
     catch ( ... )
     {
-        return c_byte_stream::e_status::error;
+        return e_status::error;
     }
 
     return pop( size );
@@ -279,11 +287,11 @@ c_byte_stream::impl_t::pull( unsigned char *destination, size_t &size, size_t of
 
 
 c_byte_stream::e_status
-c_byte_stream::impl_t::pull_back( unsigned char *destination, size_t &size, size_t offset )
+c_byte_stream::impl_t::pull_back( unsigned char *destination, size_t &size, const size_t offset )
 {
     if ( offset >= container.size() )
     {
-        return c_byte_stream::e_status::out_of_bound;
+        return e_status::out_of_bound;
     }
 
     size = std::min( size, container.size() - offset );
@@ -294,29 +302,29 @@ c_byte_stream::impl_t::pull_back( unsigned char *destination, size_t &size, size
     }
     catch ( ... )
     {
-        return c_byte_stream::e_status::error;
+        return e_status::error;
     }
 
     return pop_back( size );
 }
 
 c_byte_stream::e_status
-c_byte_stream::impl_t::move( c_byte_stream *destination, size_t size, size_t offset )
+c_byte_stream::impl_t::move( const c_byte_stream *destination, const size_t size, const size_t offset )
 {
     if ( offset >= container.size() )
     {
-        return c_byte_stream::e_status::out_of_bound;
+        return e_status::out_of_bound;
     }
 
     if ( offset + size > container.size() )
     {
-        return c_byte_stream::e_status::out_of_bound;
+        return e_status::out_of_bound;
     }
 
     try
     {
-        auto begin = container.begin() + offset;
-        auto end = begin + size;
+        const auto begin = container.begin() + static_cast< ptrdiff_t >( offset );
+        const auto end = begin + static_cast< ptrdiff_t >( size );
 
         destination->impl->container.insert( destination->impl->container.end(),
             std::make_move_iterator( begin ),
@@ -326,29 +334,29 @@ c_byte_stream::impl_t::move( c_byte_stream *destination, size_t size, size_t off
     }
     catch ( const std::bad_alloc & )
     {
-        return c_byte_stream::e_status::out_of_memory;
+        return e_status::out_of_memory;
     }
     catch ( ... )
     {
-        return c_byte_stream::e_status::error;
+        return e_status::error;
     }
 
-    return c_byte_stream::e_status::ok;
+    return e_status::ok;
 }
 
 c_byte_stream::e_status
-c_byte_stream::impl_t::copy( unsigned char *destination, size_t size, size_t *available, size_t offset )
+c_byte_stream::impl_t::copy( unsigned char *destination, size_t size, size_t *available, const size_t offset ) const
 {
     if ( offset >= container.size() )
     {
-        return c_byte_stream::e_status::out_of_bound;
+        return e_status::out_of_bound;
     }
 
     size = std::min( size, container.size() - offset );
 
     if ( available )
     {
-        ( *available ) = size;
+        *available = size;
     }
 
     try
@@ -357,70 +365,70 @@ c_byte_stream::impl_t::copy( unsigned char *destination, size_t size, size_t *av
     }
     catch ( ... )
     {
-        return c_byte_stream::e_status::error;
+        return e_status::error;
     }
 
-    return c_byte_stream::e_status::ok;
+    return e_status::ok;
 }
 
 c_byte_stream::e_status
-c_byte_stream::impl_t::pop( size_t size )
+c_byte_stream::impl_t::pop( const size_t size )
 {
     if ( size > container.size() )
     {
-        return c_byte_stream::e_status::out_of_bound;
+        return e_status::out_of_bound;
     }
 
     try
     {
-        container.erase( container.begin(), container.begin() + size );
+        container.erase( container.begin(), container.begin() + static_cast< ptrdiff_t >( size ) );
     }
     catch ( ... )
     {
-        return c_byte_stream::e_status::error;
+        return e_status::error;
     }
 
-    return c_byte_stream::e_status::ok;
+    return e_status::ok;
 }
 
 c_byte_stream::e_status
-c_byte_stream::impl_t::pop_back( size_t size )
+c_byte_stream::impl_t::pop_back( const size_t size )
 {
     if ( size > container.size() )
     {
-        return c_byte_stream::e_status::out_of_bound;
+        return e_status::out_of_bound;
     }
 
     try
     {
-        container.erase( container.end() - size, container.end() );
+        container.erase( container.end() - static_cast< ptrdiff_t >( size ), container.end() );
     }
     catch ( ... )
     {
-        return c_byte_stream::e_status::error;
+        return e_status::error;
     }
 
-    return c_byte_stream::e_status::ok;
+    return e_status::ok;
 }
 
 c_byte_stream::e_status
-c_byte_stream::impl_t::erase( size_t start, size_t size )
+c_byte_stream::impl_t::erase( const size_t start, const size_t size )
 {
     if ( start >= container.size() || start + size > container.size() )
     {
-        return c_byte_stream::e_status::out_of_bound;
+        return e_status::out_of_bound;
     }
 
     try
     {
-        container.erase( container.begin() + start, container.begin() + start + size );
+        container.erase( container.begin() + static_cast< ptrdiff_t >( start ), container.begin() + static_cast< ptrdiff_t >( start ) + static_cast< ptrdiff_t >( size ) );
     }
     catch ( ... )
     {
-        return c_byte_stream::e_status::error;
+        return e_status::error;
     }
 
-    return c_byte_stream::e_status::ok;
+    return e_status::ok;
 }
 
 void
@@ -430,7 +438,7 @@ c_byte_stream::impl_t::flush()
 }
 
 int
-c_byte_stream::impl_t::compare( unsigned char *pattern, size_t size, size_t offset )
+c_byte_stream::impl_t::compare( const unsigned char *pattern, size_t size, const size_t offset ) const
 {
     if ( container.empty() || size == 0 || offset >= container.size() )
     {
@@ -443,14 +451,14 @@ c_byte_stream::impl_t::compare( unsigned char *pattern, size_t size, size_t offs
 }
 
 size_t
-c_byte_stream::impl_t::index_of( int val, size_t offset )
+c_byte_stream::impl_t::index_of( const int val, const size_t offset )
 {
     if ( container.empty() || offset >= container.size() )
     {
         return npos;
     }
 
-    unsigned char *ptr = static_cast< unsigned char * >( std::memchr( container.data() + offset, static_cast< unsigned char >( val ), container.size() - offset ) );
+    const auto ptr = static_cast< unsigned char * >( std::memchr( container.data() + offset, static_cast< unsigned char >( val ), container.size() - offset ) );
 
     if ( ptr == nullptr )
     {
@@ -461,14 +469,14 @@ c_byte_stream::impl_t::index_of( int val, size_t offset )
 }
 
 size_t
-c_byte_stream::impl_t::index_of( unsigned char *pattern, size_t size, size_t offset )
+c_byte_stream::impl_t::index_of( const unsigned char *pattern, const size_t size, const size_t offset ) const
 {
     if ( container.empty() || size == 0 || size > container.size() || offset >= container.size() )
     {
         return npos;
     }
 
-    size_t end = container.size() - size;
+    const size_t end = container.size() - size;
 
     for ( size_t i = offset; i <= end; ++i )
     {
@@ -482,14 +490,14 @@ c_byte_stream::impl_t::index_of( unsigned char *pattern, size_t size, size_t off
 }
 
 size_t
-c_byte_stream::impl_t::index_of_back( int val, size_t offset )
+c_byte_stream::impl_t::index_of_back( const int val, const size_t offset ) const
 {
     if ( container.empty() || offset >= container.size() )
     {
         return npos;
     }
 
-    size_t start = container.size() - offset;
+    const size_t start = container.size() - offset;
 
     for ( size_t i = start; i != npos; --i )
     {
@@ -503,14 +511,14 @@ c_byte_stream::impl_t::index_of_back( int val, size_t offset )
 }
 
 size_t
-c_byte_stream::impl_t::index_of_back( unsigned char *pattern, size_t size, size_t offset )
+c_byte_stream::impl_t::index_of_back( const unsigned char *pattern, const size_t size, const size_t offset ) const
 {
     if ( container.empty() || size == 0 || size > container.size() || offset >= container.size() )
     {
         return npos;
     }
 
-    size_t start = std::min( offset, container.size() - size );
+    const size_t start = std::min( offset, container.size() - size );
 
     for ( size_t i = start; i != npos; --i )
     {
@@ -529,7 +537,7 @@ c_byte_stream::impl_t::index_of_back( unsigned char *pattern, size_t size, size_
 }
 
 unsigned char *
-c_byte_stream::impl_t::pointer( size_t offset ) const
+c_byte_stream::impl_t::pointer( const size_t offset ) const
 {
     if ( container.empty() || offset >= container.size() )
     {
@@ -552,7 +560,7 @@ c_byte_stream::impl_t::is_utf8() const
 
     while ( i < len )
     {
-        unsigned char c = container[ i ];
+        const unsigned char c = container[ i ];
         int n = 0;
 
         if ( c <= 0x7F )
@@ -575,11 +583,8 @@ c_byte_stream::impl_t::is_utf8() const
             // 4-byte sequence (11110xxx)
             n = 3;
         }
-        else if ( c == 0xED && i + 1 < len && ( container[ i + 1 ] & 0xA0 ) == 0xA0 )
-        {
-            // invalid surrogate half
-            return false;
-        }
+        // if ( c == 0xED && i + 1 < len && ( container[ i + 1 ] & 0xA0 ) == 0xA0 )
+        // invalid surrogate half
         else
         {
             // invalid utf-8 start byte
@@ -602,11 +607,11 @@ c_byte_stream::impl_t::is_utf8() const
 }
 
 c_byte_stream::e_status
-c_byte_stream::push( unsigned char value )
+c_byte_stream::push( unsigned char value ) const
 {
     impl->wait_lock();
 
-    c_byte_stream::e_status status = impl->push( &value, 1 );
+    const e_status status = impl->push( &value, 1 );
 
     impl->unlock();
 
@@ -614,14 +619,14 @@ c_byte_stream::push( unsigned char value )
 }
 
 c_byte_stream::e_status
-c_byte_stream::push_async( unsigned char value )
+c_byte_stream::push_async( unsigned char value ) const
 {
     if ( !impl->try_lock() )
     {
-        return c_byte_stream::e_status::busy;
+        return e_status::busy;
     }
 
-    c_byte_stream::e_status status = impl->push( &value, 1 );
+    const e_status status = impl->push( &value, 1 );
 
     impl->unlock();
 
@@ -629,11 +634,11 @@ c_byte_stream::push_async( unsigned char value )
 }
 
 c_byte_stream::e_status
-c_byte_stream::push( unsigned char *source, size_t size )
+c_byte_stream::push( unsigned char *source, const size_t size ) const
 {
     impl->wait_lock();
 
-    c_byte_stream::e_status status = impl->push( source, size );
+    const e_status status = impl->push( source, size );
 
     impl->unlock();
 
@@ -641,14 +646,14 @@ c_byte_stream::push( unsigned char *source, size_t size )
 }
 
 c_byte_stream::e_status
-c_byte_stream::push_async( unsigned char *source, size_t size )
+c_byte_stream::push_async( unsigned char *source, const size_t size ) const
 {
     if ( !impl->try_lock() )
     {
-        return c_byte_stream::e_status::busy;
+        return e_status::busy;
     }
 
-    c_byte_stream::e_status status = impl->push( source, size );
+    const e_status status = impl->push( source, size );
 
     impl->unlock();
 
@@ -656,11 +661,11 @@ c_byte_stream::push_async( unsigned char *source, size_t size )
 }
 
 c_byte_stream::e_status
-c_byte_stream::push_back( unsigned char value )
+c_byte_stream::push_back( unsigned char value ) const
 {
     impl->wait_lock();
 
-    c_byte_stream::e_status status = impl->push_back( &value, 1 );
+    const e_status status = impl->push_back( &value, 1 );
 
     impl->unlock();
 
@@ -668,14 +673,14 @@ c_byte_stream::push_back( unsigned char value )
 }
 
 c_byte_stream::e_status
-c_byte_stream::push_back_async( unsigned char value )
+c_byte_stream::push_back_async( unsigned char value ) const
 {
     if ( !impl->try_lock() )
     {
-        return c_byte_stream::e_status::busy;
+        return e_status::busy;
     }
 
-    c_byte_stream::e_status status = impl->push_back( &value, 1 );
+    const e_status status = impl->push_back( &value, 1 );
 
     impl->unlock();
 
@@ -683,11 +688,11 @@ c_byte_stream::push_back_async( unsigned char value )
 }
 
 c_byte_stream::e_status
-c_byte_stream::push_back( unsigned char *source, size_t size )
+c_byte_stream::push_back( unsigned char *source, const size_t size ) const
 {
     impl->wait_lock();
 
-    c_byte_stream::e_status status = impl->push_back( source, size );
+    const e_status status = impl->push_back( source, size );
 
     impl->unlock();
 
@@ -695,14 +700,14 @@ c_byte_stream::push_back( unsigned char *source, size_t size )
 }
 
 c_byte_stream::e_status
-c_byte_stream::push_back_async( unsigned char *source, size_t size )
+c_byte_stream::push_back_async( unsigned char *source, const size_t size ) const
 {
     if ( !impl->try_lock() )
     {
-        return c_byte_stream::e_status::busy;
+        return e_status::busy;
     }
 
-    c_byte_stream::e_status status = impl->push_back( source, size );
+    const e_status status = impl->push_back( source, size );
 
     impl->unlock();
 
@@ -710,11 +715,11 @@ c_byte_stream::push_back_async( unsigned char *source, size_t size )
 }
 
 c_byte_stream::e_status
-c_byte_stream::pull( unsigned char *destination, size_t &size, size_t offset )
+c_byte_stream::pull( unsigned char *destination, size_t &size, const size_t offset ) const
 {
     impl->wait_lock();
 
-    c_byte_stream::e_status status = impl->pull( destination, size, offset );
+    const e_status status = impl->pull( destination, size, offset );
 
     impl->unlock();
 
@@ -722,14 +727,14 @@ c_byte_stream::pull( unsigned char *destination, size_t &size, size_t offset )
 }
 
 c_byte_stream::e_status
-c_byte_stream::pull_async( unsigned char *destination, size_t &size, size_t offset )
+c_byte_stream::pull_async( unsigned char *destination, size_t &size, const size_t offset ) const
 {
     if ( !impl->try_lock() )
     {
-        return c_byte_stream::e_status::busy;
+        return e_status::busy;
     }
 
-    c_byte_stream::e_status status = impl->pull( destination, size, offset );
+    const e_status status = impl->pull( destination, size, offset );
 
     impl->unlock();
 
@@ -737,11 +742,11 @@ c_byte_stream::pull_async( unsigned char *destination, size_t &size, size_t offs
 }
 
 c_byte_stream::e_status
-c_byte_stream::pull_back( unsigned char *destination, size_t &size, size_t offset )
+c_byte_stream::pull_back( unsigned char *destination, size_t &size, const size_t offset ) const
 {
     impl->wait_lock();
 
-    c_byte_stream::e_status status = impl->pull_back( destination, size, offset );
+    const e_status status = impl->pull_back( destination, size, offset );
 
     impl->unlock();
 
@@ -749,14 +754,14 @@ c_byte_stream::pull_back( unsigned char *destination, size_t &size, size_t offse
 }
 
 c_byte_stream::e_status
-c_byte_stream::pull_back_async( unsigned char *destination, size_t &size, size_t offset )
+c_byte_stream::pull_back_async( unsigned char *destination, size_t &size, const size_t offset ) const
 {
     if ( !impl->try_lock() )
     {
-        return c_byte_stream::e_status::busy;
+        return e_status::busy;
     }
 
-    c_byte_stream::e_status status = impl->pull_back( destination, size, offset );
+    const e_status status = impl->pull_back( destination, size, offset );
 
     impl->unlock();
 
@@ -764,11 +769,11 @@ c_byte_stream::pull_back_async( unsigned char *destination, size_t &size, size_t
 }
 
 c_byte_stream::e_status
-c_byte_stream::move( c_byte_stream *destination, size_t size, size_t offset )
+c_byte_stream::move( const c_byte_stream *destination, const size_t size, const size_t offset ) const
 {
     impl->wait_lock();
 
-    c_byte_stream::e_status status = impl->move( destination, size, offset );
+    const e_status status = impl->move( destination, size, offset );
 
     impl->unlock();
 
@@ -776,14 +781,14 @@ c_byte_stream::move( c_byte_stream *destination, size_t size, size_t offset )
 }
 
 c_byte_stream::e_status
-c_byte_stream::move_async( c_byte_stream *destination, size_t size, size_t offset )
+c_byte_stream::move_async( const c_byte_stream *destination, const size_t size, const size_t offset ) const
 {
     if ( !impl->try_lock() )
     {
-        return c_byte_stream::e_status::busy;
+        return e_status::busy;
     }
 
-    c_byte_stream::e_status status = impl->move( destination, size, offset );
+    const e_status status = impl->move( destination, size, offset );
 
     impl->unlock();
 
@@ -791,11 +796,11 @@ c_byte_stream::move_async( c_byte_stream *destination, size_t size, size_t offse
 }
 
 c_byte_stream::e_status
-c_byte_stream::copy( unsigned char *destination, size_t size, size_t *available, size_t offset )
+c_byte_stream::copy( unsigned char *destination, const size_t size, size_t *available, const size_t offset ) const
 {
     impl->wait_lock();
 
-    c_byte_stream::e_status status = impl->copy( destination, size, available, offset );
+    const e_status status = impl->copy( destination, size, available, offset );
 
     impl->unlock();
 
@@ -803,14 +808,14 @@ c_byte_stream::copy( unsigned char *destination, size_t size, size_t *available,
 }
 
 c_byte_stream::e_status
-c_byte_stream::copy_async( unsigned char *destination, size_t size, size_t *available, size_t offset )
+c_byte_stream::copy_async( unsigned char *destination, const size_t size, size_t *available, const size_t offset ) const
 {
     if ( !impl->try_lock() )
     {
-        return c_byte_stream::e_status::busy;
+        return e_status::busy;
     }
 
-    c_byte_stream::e_status status = impl->copy( destination, size, available, offset );
+    const e_status status = impl->copy( destination, size, available, offset );
 
     impl->unlock();
 
@@ -818,17 +823,17 @@ c_byte_stream::copy_async( unsigned char *destination, size_t size, size_t *avai
 }
 
 unsigned char *
-c_byte_stream::pointer( size_t offset ) const
+c_byte_stream::pointer( const size_t offset ) const
 {
     return impl->pointer( offset );
 }
 
 c_byte_stream::e_status
-c_byte_stream::pop( size_t size )
+c_byte_stream::pop( const size_t size ) const
 {
     impl->wait_lock();
 
-    c_byte_stream::e_status status = impl->pop( size );
+    const e_status status = impl->pop( size );
 
     impl->unlock();
 
@@ -836,14 +841,14 @@ c_byte_stream::pop( size_t size )
 }
 
 c_byte_stream::e_status
-c_byte_stream::pop_async( size_t size )
+c_byte_stream::pop_async( const size_t size ) const
 {
     if ( !impl->try_lock() )
     {
-        return c_byte_stream::e_status::busy;
+        return e_status::busy;
     }
 
-    c_byte_stream::e_status status = impl->pop( size );
+    const e_status status = impl->pop( size );
 
     impl->unlock();
 
@@ -851,11 +856,11 @@ c_byte_stream::pop_async( size_t size )
 }
 
 c_byte_stream::e_status
-c_byte_stream::pop_back( size_t size )
+c_byte_stream::pop_back( const size_t size ) const
 {
     impl->wait_lock();
 
-    c_byte_stream::e_status status = impl->pop_back( size );
+    const e_status status = impl->pop_back( size );
 
     impl->unlock();
 
@@ -863,14 +868,14 @@ c_byte_stream::pop_back( size_t size )
 }
 
 c_byte_stream::e_status
-c_byte_stream::pop_back_async( size_t size )
+c_byte_stream::pop_back_async( const size_t size ) const
 {
     if ( !impl->try_lock() )
     {
-        return c_byte_stream::e_status::busy;
+        return e_status::busy;
     }
 
-    c_byte_stream::e_status status = impl->pop_back( size );
+    const e_status status = impl->pop_back( size );
 
     impl->unlock();
 
@@ -878,11 +883,11 @@ c_byte_stream::pop_back_async( size_t size )
 }
 
 c_byte_stream::e_status
-c_byte_stream::erase( size_t start, size_t size )
+c_byte_stream::erase( const size_t start, const size_t size ) const
 {
     impl->wait_lock();
 
-    c_byte_stream::e_status status = impl->erase( start, size );
+    const e_status status = impl->erase( start, size );
 
     impl->unlock();
 
@@ -890,14 +895,14 @@ c_byte_stream::erase( size_t start, size_t size )
 }
 
 c_byte_stream::e_status
-c_byte_stream::erase_async( size_t start, size_t size )
+c_byte_stream::erase_async( const size_t start, const size_t size ) const
 {
     if ( !impl->try_lock() )
     {
-        return c_byte_stream::e_status::busy;
+        return e_status::busy;
     }
 
-    c_byte_stream::e_status status = impl->erase( start, size );
+    const e_status status = impl->erase( start, size );
 
     impl->unlock();
 
@@ -905,7 +910,7 @@ c_byte_stream::erase_async( size_t start, size_t size )
 }
 
 void
-c_byte_stream::flush()
+c_byte_stream::flush() const
 {
     impl->wait_lock();
 
@@ -915,26 +920,26 @@ c_byte_stream::flush()
 }
 
 c_byte_stream::e_status
-c_byte_stream::flush_async()
+c_byte_stream::flush_async() const
 {
     if ( !impl->try_lock() )
     {
-        return c_byte_stream::e_status::busy;
+        return e_status::busy;
     }
 
     impl->flush();
 
     impl->unlock();
 
-    return c_byte_stream::e_status::ok;
+    return e_status::ok;
 }
 
 int
-c_byte_stream::compare( unsigned char *pattern, size_t size, size_t offset )
+c_byte_stream::compare( const unsigned char *pattern, const size_t size, const size_t offset ) const
 {
     impl->wait_lock();
 
-    int ret = impl->compare( pattern, size, offset );
+    const int ret = impl->compare( pattern, size, offset );
 
     impl->unlock();
 
@@ -942,14 +947,14 @@ c_byte_stream::compare( unsigned char *pattern, size_t size, size_t offset )
 }
 
 int
-c_byte_stream::compare_async( unsigned char *pattern, size_t size, size_t offset )
+c_byte_stream::compare_async( const unsigned char *pattern, const size_t size, const size_t offset ) const
 {
     if ( !impl->try_lock() )
     {
         return -1;
     }
 
-    int ret = impl->compare( pattern, size, offset );
+    const int ret = impl->compare( pattern, size, offset );
 
     impl->unlock();
 
@@ -957,11 +962,11 @@ c_byte_stream::compare_async( unsigned char *pattern, size_t size, size_t offset
 }
 
 size_t
-c_byte_stream::index_of( int val, size_t offset )
+c_byte_stream::index_of( const int val, const size_t offset ) const
 {
     impl->wait_lock();
 
-    size_t pos = impl->index_of( val, offset );
+    const size_t pos = impl->index_of( val, offset );
 
     impl->unlock();
 
@@ -969,14 +974,14 @@ c_byte_stream::index_of( int val, size_t offset )
 }
 
 size_t
-c_byte_stream::index_of_async( int val, size_t offset )
+c_byte_stream::index_of_async( const int val, const size_t offset ) const
 {
     if ( !impl->try_lock() )
     {
         return npos;
     }
 
-    size_t pos = impl->index_of( val, offset );
+    const size_t pos = impl->index_of( val, offset );
 
     impl->unlock();
 
@@ -984,11 +989,11 @@ c_byte_stream::index_of_async( int val, size_t offset )
 }
 
 size_t
-c_byte_stream::index_of( unsigned char *pattern, size_t size, size_t offset )
+c_byte_stream::index_of( const unsigned char *pattern, const size_t size, const size_t offset ) const
 {
     impl->wait_lock();
 
-    size_t pos = impl->index_of( pattern, size, offset );
+    const size_t pos = impl->index_of( pattern, size, offset );
 
     impl->unlock();
 
@@ -996,14 +1001,14 @@ c_byte_stream::index_of( unsigned char *pattern, size_t size, size_t offset )
 }
 
 size_t
-c_byte_stream::index_of_async( unsigned char *pattern, size_t size, size_t offset )
+c_byte_stream::index_of_async( const unsigned char *pattern, const size_t size, const size_t offset ) const
 {
     if ( !impl->try_lock() )
     {
         return npos;
     }
 
-    size_t pos = impl->index_of( pattern, size, offset );
+    const size_t pos = impl->index_of( pattern, size, offset );
 
     impl->unlock();
 
@@ -1011,11 +1016,11 @@ c_byte_stream::index_of_async( unsigned char *pattern, size_t size, size_t offse
 }
 
 size_t
-c_byte_stream::index_of_back( int val, size_t offset )
+c_byte_stream::index_of_back( const int val, const size_t offset ) const
 {
     impl->wait_lock();
 
-    size_t pos = impl->index_of_back( val, offset );
+    const size_t pos = impl->index_of_back( val, offset );
 
     impl->unlock();
 
@@ -1023,11 +1028,11 @@ c_byte_stream::index_of_back( int val, size_t offset )
 }
 
 size_t
-c_byte_stream::index_of_back( unsigned char *pattern, size_t size, size_t offset )
+c_byte_stream::index_of_back( const unsigned char *pattern, const size_t size, const size_t offset ) const
 {
     impl->wait_lock();
 
-    size_t pos = impl->index_of_back( pattern, size, offset );
+    const size_t pos = impl->index_of_back( pattern, size, offset );
 
     impl->unlock();
 
@@ -1035,14 +1040,14 @@ c_byte_stream::index_of_back( unsigned char *pattern, size_t size, size_t offset
 }
 
 size_t
-c_byte_stream::index_of_back_async( int val, size_t offset )
+c_byte_stream::index_of_back_async( const int val, const size_t offset ) const
 {
     if ( !impl->try_lock() )
     {
         return npos;
     }
 
-    size_t pos = impl->index_of_back( val, offset );
+    const size_t pos = impl->index_of_back( val, offset );
 
     impl->unlock();
 
@@ -1050,14 +1055,14 @@ c_byte_stream::index_of_back_async( int val, size_t offset )
 }
 
 size_t
-c_byte_stream::index_of_back_async( unsigned char *pattern, size_t size, size_t offset )
+c_byte_stream::index_of_back_async( const unsigned char *pattern, const size_t size, const size_t offset ) const
 {
     if ( !impl->try_lock() )
     {
         return npos;
     }
 
-    size_t pos = impl->index_of_back( pattern, size, offset );
+    const size_t pos = impl->index_of_back( pattern, size, offset );
 
     impl->unlock();
 

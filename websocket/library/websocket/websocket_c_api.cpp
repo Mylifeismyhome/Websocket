@@ -47,10 +47,10 @@ websocket_setup( void *ctx, const ws_settings_t *settings )
 {
     if ( !ctx )
     {
-        return e_ws_status::status_error;
+        return status_error;
     }
 
-    return reinterpret_cast< c_websocket * >( ctx )->setup( settings );
+    return static_cast< c_websocket * >( ctx )->setup( settings );
 }
 
 e_ws_status
@@ -80,7 +80,7 @@ websocket_on( void *ctx, const char *event_name, void *callback )
 {
     if ( !ctx )
     {
-        return e_ws_status::status_error;
+        return status_error;
     }
 
     return static_cast< c_websocket * >( ctx )->on( event_name, callback );
@@ -111,7 +111,7 @@ websocket_destroy( void *ctx )
 }
 
 void *
-websocket_frame_create( e_ws_frame_opcode opcode )
+websocket_frame_create( const e_ws_frame_opcode opcode )
 {
     void *ptr = std::malloc( sizeof( c_ws_frame ) );
     if ( ptr == nullptr )
@@ -134,7 +134,7 @@ websocket_frame_mask( void *ctx, const int key )
 }
 
 bool
-websocket_frame_push( void *ctx, unsigned char *data, size_t size )
+websocket_frame_push( void *ctx, unsigned char *data, const size_t size )
 {
     if ( !ctx )
     {

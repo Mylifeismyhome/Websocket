@@ -51,7 +51,7 @@ class WEBSOCKET_API c_ws_frame final
      * @internal
      */
     e_ws_frame_status
-    write( c_byte_stream *output ) const;
+    write( const c_byte_stream *output ) const;
 
     /**
      * @brief Reads the frame from an input buffer (internal use only).
@@ -65,7 +65,7 @@ class WEBSOCKET_API c_ws_frame final
      * @internal
      */
     e_ws_frame_status
-    read( c_byte_stream *input ) const;
+    read( const c_byte_stream *input ) const;
 
 public:
     c_ws_frame();

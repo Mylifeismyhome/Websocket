@@ -63,7 +63,8 @@ struct ssl_t
 
     ssl_t();
 
-    ~ssl_t();
+    ~
+    ssl_t();
 };
 
 struct addr_t
@@ -77,9 +78,11 @@ struct addr_t
 
     addr_t( const unsigned char *in_bytes, size_t in_len );
 
-    explicit addr_t( const char *in_raw );
+    explicit
+    addr_t( const char *in_raw );
 
-    explicit addr_t( const std::string &in_raw );
+    explicit
+    addr_t( const std::string &in_raw );
 
     void
     from_string( const std::string &in_string );
@@ -94,12 +97,12 @@ struct network_stream_t
     c_byte_stream output;
 
     void
-    close();
+    close() const;
 
+    network_stream_t() = default;
+
+    ~
     network_stream_t()
-    = default;
-
-    ~network_stream_t()
     {
         close();
     }
@@ -151,7 +154,8 @@ struct file_descriptor_context
 
     file_descriptor_context();
 
-    ~file_descriptor_context();
+    ~
+    file_descriptor_context();
 
     void
     timer_ping( unsigned int ms );
@@ -206,7 +210,7 @@ struct c_websocket::impl_t
     set_last_status( int status );
 
     void
-    set_last_error( const std::string& message );
+    set_last_error( const std::string &message );
 
     e_ws_status
     setup( const ws_settings_t *settings );
@@ -233,14 +237,16 @@ struct c_websocket::impl_t
     operate();
 
     void
-    async_ws_frame( const int& fd, const c_ws_frame& frame ) const;
+    async_ws_frame( const int &fd, const c_ws_frame &frame ) const;
 
     impl_t();
 
-    ~impl_t();
+    ~
+    impl_t();
 };
 
-c_websocket::impl_t::impl_t()
+c_websocket::impl_t::
+impl_t()
 {
     instance = nullptr;
 
@@ -267,12 +273,14 @@ c_websocket::impl_t::impl_t()
     message_limit = 4 * 1024 * 1024; // 4 mb in bytes
 }
 
-c_websocket::impl_t::~impl_t()
+c_websocket::impl_t::~
+impl_t()
 {
     fd_map.clear();
 }
 
-ssl_t::ssl_t()
+ssl_t::
+ssl_t()
 {
     mbedtls_ssl_config_init( &context );
 
@@ -287,7 +295,8 @@ ssl_t::ssl_t()
     mbedtls_ctr_drbg_init( &drbg );
 }
 
-ssl_t::~ssl_t()
+ssl_t::~
+ssl_t()
 {
     mbedtls_ssl_config_free( &context );
 
@@ -302,7 +311,8 @@ ssl_t::~ssl_t()
     mbedtls_ctr_drbg_free( &drbg );
 }
 
-addr_t::addr_t()
+addr_t::
+addr_t()
 {
     std::memset( bytes, 0, sizeof( bytes ) );
     len = 0;
@@ -311,7 +321,8 @@ addr_t::addr_t()
     raw = {};
 }
 
-addr_t::addr_t( const unsigned char *in_bytes, const size_t in_len )
+addr_t::
+addr_t( const unsigned char *in_bytes, const size_t in_len )
 {
     std::memcpy( bytes, in_bytes, sizeof( bytes ) );
     len = in_len;
@@ -320,14 +331,16 @@ addr_t::addr_t( const unsigned char *in_bytes, const size_t in_len )
     raw = {};
 }
 
-addr_t::addr_t( const char *in_raw ) :
+addr_t::
+addr_t( const char *in_raw ) :
     addr_t()
 {
     is_raw = true;
     raw = in_raw;
 }
 
-addr_t::addr_t( const std::string &in_raw ) :
+addr_t::
+addr_t( const std::string &in_raw ) :
     addr_t()
 {
     is_raw = true;
@@ -422,13 +435,14 @@ addr_t::to_string() const
 }
 
 void
-network_stream_t::close()
+network_stream_t::close() const
 {
     input.close();
     output.close();
 }
 
-file_descriptor_context::file_descriptor_context()
+file_descriptor_context::
+file_descriptor_context()
 {
     net = {};
     ssl = {};
@@ -446,19 +460,20 @@ file_descriptor_context::file_descriptor_context()
     closure_status = closure_no_status_received;
 }
 
-file_descriptor_context::~file_descriptor_context()
+file_descriptor_context::~
+file_descriptor_context()
 {
     stream.close();
 }
 
 void
-file_descriptor_context::timer_ping( unsigned int ms )
+file_descriptor_context::timer_ping( const unsigned int ms )
 {
     mbedtls_timing_set_delay( &timer_ping_ctx, 0, ms );
 }
 
 void
-file_descriptor_context::timer_pong( unsigned int ms )
+file_descriptor_context::timer_pong( const unsigned int ms )
 {
     mbedtls_timing_set_delay( &timer_ping_pong_ctx, 0, ms );
 }
@@ -503,7 +518,7 @@ c_websocket::impl_t::set_last_status( const int status )
 }
 
 void
-c_websocket::impl_t::set_last_error( const std::string& message )
+c_websocket::impl_t::set_last_error( const std::string &message )
 {
     last_error = message;
 
@@ -595,7 +610,7 @@ c_websocket::impl_t::poll( file_descriptor_context *ctx ) const
 void
 c_websocket::impl_t::accept( file_descriptor_context *ctx )
 {
-    int state = poll( ctx );
+    const int state = poll( ctx );
 
     if ( !( state & MBEDTLS_NET_POLL_READ ) )
     {
@@ -609,7 +624,7 @@ c_websocket::impl_t::accept( file_descriptor_context *ctx )
     mbedtls_net_context net;
     mbedtls_net_init( &net );
 
-    int status = MBEDTLS_STATUS( mbedtls_net_accept( &ctx->net, &net, &client_addr, sizeof( client_addr ), &client_addr_len ) );
+    const int status = MBEDTLS_STATUS( mbedtls_net_accept( &ctx->net, &net, &client_addr, sizeof( client_addr ), &client_addr_len ) );
 
     if ( status == MBEDTLS_ERR_SSL_WANT_READ || status == MBEDTLS_ERR_SSL_WANT_WRITE )
     {
@@ -810,7 +825,7 @@ c_websocket::impl_t::communicate( file_descriptor_context *ctx )
                             case e_ws_con_state::open:
                             case e_ws_con_state::closing:
                             {
-                                e_ws_frame_status status_frame = ctx->frame.read( &ctx->stream.input );
+                                const e_ws_frame_status status_frame = ctx->frame.read( &ctx->stream.input );
 
                                 switch ( status_frame )
                                 {
@@ -822,7 +837,7 @@ c_websocket::impl_t::communicate( file_descriptor_context *ctx )
 
                                     case e_ws_frame_status::status_final:
                                     {
-                                        e_ws_frame_opcode opcode = ctx->frame.get_opcode();
+                                        const e_ws_frame_opcode opcode = ctx->frame.get_opcode();
 
                                         switch ( opcode )
                                         {
@@ -1006,7 +1021,7 @@ c_websocket::impl_t::bind( const char *bind_ip, const char *bind_port, int *out_
 
     file_descriptor_context new_fd;
     new_fd.net = net;
-    new_fd.addr = addr_t(bind_ip ? bind_ip : "0.0.0.0");
+    new_fd.addr = addr_t( bind_ip ? bind_ip : "0.0.0.0" );
     new_fd.type = e_file_descriptor_type::bind;
     new_fd.state = e_file_descriptor_state::open;
     new_fd.ws_con_state = e_ws_con_state::open;
@@ -1014,7 +1029,7 @@ c_websocket::impl_t::bind( const char *bind_ip, const char *bind_port, int *out_
 
     if ( out_fd )
     {
-        ( *out_fd ) = net.fd;
+        *out_fd = net.fd;
     }
 
     return status_ok;
@@ -1056,7 +1071,7 @@ c_websocket::impl_t::open( const char *host_name, const char *host_port, int *ou
     file_descriptor_context new_fd;
     new_fd.net = net;
     new_fd.ssl = ssl;
-    new_fd.addr = addr_t(host_name);
+    new_fd.addr = addr_t( host_name );
     new_fd.type = e_file_descriptor_type::any;
     new_fd.state = e_file_descriptor_state::handshake;
     new_fd.ws_con_state = e_ws_con_state::opening;
@@ -1064,7 +1079,7 @@ c_websocket::impl_t::open( const char *host_name, const char *host_port, int *ou
 
     if ( out_fd )
     {
-        ( *out_fd ) = net.fd;
+        *out_fd = net.fd;
     }
 
     return status_ok;
@@ -1102,7 +1117,7 @@ c_websocket::impl_t::operate()
 
         if ( ctx->type != e_file_descriptor_type::bind )
         {
-            int state = poll( ctx );
+            const int state = poll( ctx );
 
             if ( !( state & MBEDTLS_NET_POLL_WRITE ) )
             {
@@ -1135,7 +1150,7 @@ c_websocket::impl_t::operate()
 
     const size_t fd_count = fd_map.size();
 
-    for (auto & it : fd_map)
+    for ( auto &it : fd_map )
     {
         file_descriptor_context *ctx = &it.second;
 
@@ -1176,7 +1191,7 @@ c_websocket::impl_t::operate()
 }
 
 void
-c_websocket::impl_t::async_ws_frame( const int& fd, const c_ws_frame& frame ) const
+c_websocket::impl_t::async_ws_frame( const int &fd, const c_ws_frame &frame ) const
 {
     const e_ws_frame_opcode opcode = frame.get_opcode();
     unsigned char *payload = frame.get_payload();
@@ -1186,7 +1201,7 @@ c_websocket::impl_t::async_ws_frame( const int& fd, const c_ws_frame& frame ) co
 }
 
 void
-c_websocket::on_open( int fd, const char *addr )
+c_websocket::on_open( const int fd, const char *addr )
 {
     if ( event_open_callback )
     {
@@ -1195,7 +1210,7 @@ c_websocket::on_open( int fd, const char *addr )
 }
 
 void
-c_websocket::on_frame( int fd, e_ws_frame_opcode opcode, unsigned char *payload, size_t size )
+c_websocket::on_frame( const int fd, const e_ws_frame_opcode opcode, unsigned char *payload, const size_t size )
 {
     if ( event_frame_callback )
     {
@@ -1204,7 +1219,7 @@ c_websocket::on_frame( int fd, e_ws_frame_opcode opcode, unsigned char *payload,
 }
 
 void
-c_websocket::on_close( int fd, e_ws_closure_status status )
+c_websocket::on_close( const int fd, const e_ws_closure_status status )
 {
     if ( event_close_callback )
     {
@@ -1221,7 +1236,8 @@ c_websocket::on_error( const char *message )
     }
 }
 
-c_websocket::c_websocket()
+c_websocket::
+c_websocket()
 {
     event_open_callback = nullptr;
     event_close_callback = nullptr;
@@ -1232,7 +1248,8 @@ c_websocket::c_websocket()
     impl->instance = this;
 }
 
-c_websocket::~c_websocket()
+c_websocket::~
+c_websocket()
 {
     delete impl;
 }
@@ -1360,13 +1377,13 @@ c_websocket::emit( const int fd, const c_ws_frame *frame ) const
         return status_error;
     }
 
-    auto it = impl->fd_map.find( fd );
+    const auto it = impl->fd_map.find( fd );
     if ( it == impl->fd_map.end() )
     {
         return status_error;
     }
 
-    file_descriptor_context *ctx = &it->second;
+    const file_descriptor_context *ctx = &it->second;
 
     if ( ctx->state != e_file_descriptor_state::open )
     {

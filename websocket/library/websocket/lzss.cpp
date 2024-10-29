@@ -68,7 +68,7 @@ c_lzss::compress( const std::vector< unsigned char > &input, std::vector< unsign
 }
 
 c_lzss::e_status
-c_lzss::decompress( const std::vector< unsigned char > &input, std::vector< unsigned char > &output, size_t maxout )
+c_lzss::decompress( const std::vector< unsigned char > &input, std::vector< unsigned char > &output, const size_t maxout )
 {
     size_t pos = 0;
     while ( pos < input.size() )

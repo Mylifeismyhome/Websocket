@@ -71,10 +71,10 @@ struct c_ws_frame::impl_t
     is_masked() const;
 
     static e_ws_frame_status
-    encode( e_ws_frame_opcode opcode, bool mask, unsigned char *mask_key, c_byte_stream *input, c_byte_stream *output );
+    encode( e_ws_frame_opcode opcode, bool mask, unsigned char *mask_key, const c_byte_stream *input, const c_byte_stream *output );
 
     static e_ws_frame_status
-    decode( c_byte_stream *input, c_byte_stream *output, e_ws_frame_opcode &opcode );
+    decode( const c_byte_stream *input, const c_byte_stream *output, e_ws_frame_opcode &opcode );
 
     impl_t()
     {
@@ -221,7 +221,7 @@ c_ws_frame::is_payload_utf8() const
 }
 
 e_ws_frame_status
-c_ws_frame::write( c_byte_stream *output ) const
+c_ws_frame::write( const c_byte_stream *output ) const
 {
     switch ( impl->opcode )
     {
@@ -240,7 +240,7 @@ c_ws_frame::write( c_byte_stream *output ) const
 }
 
 e_ws_frame_status
-c_ws_frame::read( c_byte_stream *input ) const
+c_ws_frame::read( const c_byte_stream *input ) const
 {
     e_ws_frame_opcode out_opcode = opcode_binary;
 
@@ -252,7 +252,7 @@ c_ws_frame::read( c_byte_stream *input ) const
 }
 
 e_ws_frame_status
-c_ws_frame::impl_t::encode( const e_ws_frame_opcode opcode, const bool mask, unsigned char *mask_key, c_byte_stream *input, c_byte_stream *output )
+c_ws_frame::impl_t::encode( const e_ws_frame_opcode opcode, const bool mask, unsigned char *mask_key, const c_byte_stream *input, const c_byte_stream *output )
 {
     if ( !output )
     {
@@ -381,7 +381,7 @@ c_ws_frame::impl_t::encode( const e_ws_frame_opcode opcode, const bool mask, uns
 }
 
 e_ws_frame_status
-c_ws_frame::impl_t::decode( c_byte_stream *input, c_byte_stream *output, e_ws_frame_opcode &opcode )
+c_ws_frame::impl_t::decode( const c_byte_stream *input, const c_byte_stream *output, e_ws_frame_opcode &opcode )
 {
     if ( !input || !output )
     {
@@ -546,7 +546,10 @@ c_ws_frame::impl_t::decode( c_byte_stream *input, c_byte_stream *output, e_ws_fr
         // push null-terminator to indicate end of sequence
         if ( byte1.bits.opcode == opcode_text )
         {
-            output->push_back( '\0' );
+            if ( output->push_back( '\0' ) != c_byte_stream::e_status::ok )
+            {
+                return e_ws_frame_status::status_error;
+            }
         }
 
         return e_ws_frame_status::status_final;

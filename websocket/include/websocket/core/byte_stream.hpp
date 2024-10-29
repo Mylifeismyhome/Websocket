@@ -39,9 +39,12 @@ public:
         out_of_bound /**< Operation attempted to access out-of-bound memory. */
     };
 
-    static constexpr size_t npos = ( size_t )~0; /**< Represents an invalid index. */
+#if defined(_WIN64) || defined(__x86_64__) || defined(__ppc64__)
+    static constexpr size_t npos = ~0LLU; /**< Represents an invalid index for 64-bit systems. */
+#else
+    static constexpr size_t npos = ~0U;   /**< Represents an invalid index for 32-bit systems. */
+#endif
 
-public:
     c_byte_stream();
 
     c_byte_stream( const c_byte_stream &other );
@@ -66,115 +69,115 @@ public:
     operator<<( unsigned char *value );
 
     void
-    close();
+    close() const;
 
     void
-    resize( size_t size );
+    resize( size_t size ) const;
 
     e_status
-    push( unsigned char value );
+    push( unsigned char value ) const;
 
     e_status
-    push_async( unsigned char value );
+    push_async( unsigned char value ) const;
 
     e_status
-    push( unsigned char *source, size_t size );
+    push( unsigned char *source, size_t size ) const;
 
     e_status
-    push_async( unsigned char *source, size_t size );
+    push_async( unsigned char *source, size_t size ) const;
 
     e_status
-    push_back( unsigned char value );
+    push_back( unsigned char value ) const;
 
     e_status
-    push_back_async( unsigned char value );
+    push_back_async( unsigned char value ) const;
 
     e_status
-    push_back( unsigned char *source, size_t size );
+    push_back( unsigned char *source, size_t size ) const;
 
     e_status
-    push_back_async( unsigned char *source, size_t size );
+    push_back_async( unsigned char *source, size_t size ) const;
 
     e_status
-    pull( unsigned char *destination, size_t &size, size_t offset = 0 );
+    pull( unsigned char *destination, size_t &size, size_t offset = 0 ) const;
 
     e_status
-    pull_async( unsigned char *destination, size_t &size, size_t offset = 0 );
+    pull_async( unsigned char *destination, size_t &size, size_t offset = 0 ) const;
 
     e_status
-    pull_back( unsigned char *destination, size_t &size, size_t offset = 0 );
+    pull_back( unsigned char *destination, size_t &size, size_t offset = 0 ) const;
 
     e_status
-    pull_back_async( unsigned char *destination, size_t &size, size_t offset = 0 );
+    pull_back_async( unsigned char *destination, size_t &size, size_t offset = 0 ) const;
 
     e_status
-    move( c_byte_stream *destination, size_t size, size_t offset );
+    move( const c_byte_stream *destination, size_t size, size_t offset ) const;
 
     e_status
-    move_async( c_byte_stream *destination, size_t size, size_t offset );
+    move_async( const c_byte_stream *destination, size_t size, size_t offset ) const;
 
     e_status
-    copy( unsigned char *destination, size_t size, size_t *available = nullptr, size_t offset = 0 );
+    copy( unsigned char *destination, size_t size, size_t *available = nullptr, size_t offset = 0 ) const;
 
     e_status
-    copy_async( unsigned char *destination, size_t size, size_t *available = nullptr, size_t offset = 0 );
+    copy_async( unsigned char *destination, size_t size, size_t *available = nullptr, size_t offset = 0 ) const;
 
     unsigned char *
     pointer( size_t offset = 0 ) const;
 
     e_status
-    pop( size_t size );
+    pop( size_t size ) const;
 
     e_status
-    pop_async( size_t size );
+    pop_async( size_t size ) const;
 
     e_status
-    pop_back( size_t size );
+    pop_back( size_t size ) const;
 
     e_status
-    pop_back_async( size_t size );
+    pop_back_async( size_t size ) const;
 
     e_status
-    erase( size_t start, size_t size );
+    erase( size_t start, size_t size ) const;
 
     e_status
-    erase_async( size_t start, size_t size );
+    erase_async( size_t start, size_t size ) const;
 
     void
-    flush();
+    flush() const;
 
     e_status
-    flush_async();
+    flush_async() const;
 
     int
-    compare( unsigned char *pattern, size_t size, size_t offset = 0 );
+    compare( const unsigned char *pattern, size_t size, size_t offset = 0 ) const;
 
     int
-    compare_async( unsigned char *pattern, size_t size, size_t offset = 0 );
+    compare_async( const unsigned char *pattern, size_t size, size_t offset = 0 ) const;
 
     size_t
-    index_of( int val, size_t offset = 0 );
+    index_of( int val, size_t offset = 0 ) const;
 
     size_t
-    index_of_async( int val, size_t offset = 0 );
+    index_of_async( int val, size_t offset = 0 ) const;
 
     size_t
-    index_of( unsigned char *pattern, size_t size, size_t offset = 0 );
+    index_of( const unsigned char *pattern, size_t size, size_t offset = 0 ) const;
 
     size_t
-    index_of_async( unsigned char *pattern, size_t size, size_t offset = 0 );
+    index_of_async( const unsigned char *pattern, size_t size, size_t offset = 0 ) const;
 
     size_t
-    index_of_back( int val, size_t offset = 0 );
+    index_of_back( int val, size_t offset = 0 ) const;
 
     size_t
-    index_of_back_async( int val, size_t offset = 0 );
+    index_of_back_async( int val, size_t offset = 0 ) const;
 
     size_t
-    index_of_back( unsigned char *pattern, size_t size, size_t offset = 0 );
+    index_of_back( const unsigned char *pattern, size_t size, size_t offset = 0 ) const;
 
     size_t
-    index_of_back_async( unsigned char *pattern, size_t size, size_t offset = 0 );
+    index_of_back_async( const unsigned char *pattern, size_t size, size_t offset = 0 ) const;
 
     size_t
     size() const;
