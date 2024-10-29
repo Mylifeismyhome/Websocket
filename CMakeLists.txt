@@ -155,6 +155,10 @@ if(BUILD_SHARED)
 	if(ENABLE_C_API)
 		target_compile_definitions(LIB_SHARED PRIVATE WEBSOCKET_C_API)
 	endif()
+	
+	if(WIN32)
+		target_link_libraries(LIB_SHARED wsock32 ws2_32)
+	endif()
 endif()
 
 if(BUILD_STATIC)
@@ -166,6 +170,10 @@ if(BUILD_STATIC)
 	
 	if(ENABLE_C_API)
 		target_compile_definitions(LIB_STATIC PRIVATE WEBSOCKET_C_API)
+	endif()
+	
+	if(WIN32)
+		target_link_libraries(LIB_STATIC wsock32 ws2_32)
 	endif()
 endif()
 
@@ -191,5 +199,10 @@ if(BUILD_EXAMPLE)
 	if(EXAMPLE_C_API)
 		target_compile_definitions(EXAMPLE_CLIENT PRIVATE WEBSOCKET_EXAMPLE_C_API)
 		target_compile_definitions(EXAMPLE_SERVER PRIVATE WEBSOCKET_EXAMPLE_C_API)
+	endif()
+	
+	if(WIN32)
+		target_link_libraries(EXAMPLE_CLIENT wsock32 ws2_32)
+		target_link_libraries(EXAMPLE_SERVER wsock32 ws2_32)
 	endif()
 endif()
