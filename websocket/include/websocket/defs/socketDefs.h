@@ -203,7 +203,7 @@ void inline ws_settings_destroy( ws_settings_t *settings )
 #else
         free( settings->ssl_private_key );
 #endif
-        settings->ssl_private_key = NULL;
+        settings->ssl_private_key = 0;
     }
 
     if ( settings->host )

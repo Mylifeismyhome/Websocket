@@ -27,9 +27,9 @@ SOFTWARE.
 
 #define CHUNK_SIZE 8192
 
-#include <websocket/core/byte_stream.hpp>
-#include <websocket/core/handshake.hpp>
-#include <websocket/core/websocket.hpp>
+#include <websocket/core/byte_stream.h>
+#include <websocket/core/handshake.h>
+#include <websocket/core/websocket.h>
 
 #include <cstring>
 #include <map>

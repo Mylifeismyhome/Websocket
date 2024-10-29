@@ -65,10 +65,12 @@
 
 #include <websocket/defs/socketDefs.h>
 
-#include <websocket/core/frame.hpp>
+#include <websocket/core/frame.h>
 
 /**
  * @brief Websocket skeleton
+ *
+ * RFC6455
  *
  * The `c_websocket` class provides an interface for handling WebSocket
  * communication. It allows binding to IP addresses and ports, opening

@@ -26,7 +26,7 @@ SOFTWARE.
 
 #include <websocket/api/websocket_c_api.h>
 
-#include <websocket/core/websocket.hpp>
+#include <websocket/core/websocket.h>
 
 #include <memory>
 

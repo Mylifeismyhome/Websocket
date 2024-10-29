@@ -22,6 +22,30 @@ public:
     static unsigned long long
     network_to_host_64( unsigned long long value );
 
+    static unsigned short
+    little_endian_16( unsigned short value );
+
+    static unsigned int
+    little_endian_32( unsigned int value );
+
+    static unsigned long long
+    little_endian_64( unsigned long long value );
+
+    static unsigned short
+    big_endian_16( unsigned short value );
+
+    static unsigned int
+    big_endian_32( unsigned int value );
+
+    static unsigned long long
+    big_endian_64( unsigned long long value );
+
+    static bool
+    is_little();
+
+    static bool
+    is_big();
+
 private:
     static unsigned short
     swap_16( unsigned short value );

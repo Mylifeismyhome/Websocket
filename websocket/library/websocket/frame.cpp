@@ -24,10 +24,10 @@ SOFTWARE.
 
 #define CHUNK_SIZE 8192
 
-#include <websocket/core/frame.hpp>
+#include <websocket/core/frame.h>
 
-#include <websocket/core/byte_stream.hpp>
-#include <websocket/core/endian.hpp>
+#include <websocket/core/byte_stream.h>
+#include <websocket/core/endian.h>
 
 #include <cstring>
 #include <memory>

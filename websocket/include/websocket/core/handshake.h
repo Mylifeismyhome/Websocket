@@ -24,7 +24,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <websocket/core/byte_stream.hpp>
+#include <websocket/core/byte_stream.h>
 
 #include <string>
 

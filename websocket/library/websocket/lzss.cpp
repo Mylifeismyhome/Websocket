@@ -1,11 +1,11 @@
-#include <websocket/core/lzss.hpp>
+#include <websocket/core/lzss.h>
 
 static constexpr size_t LZSS_MIN_MATCH_LENGTH = 3; // Minimum match length to encode
 static constexpr size_t LZSS_MAX_MATCH_LENGTH = 18; // Maximum match length
 static constexpr size_t LZSS_FLAG_BYTE = 0x80; // Flag byte to indicate literal/match
 
 c_lzss::e_status
-c_lzss::compress( const std::vector< unsigned char > &input, std::vector< unsigned char > &output, size_t window_size )
+c_lzss::compress( const std::vector< unsigned char > &input, std::vector< unsigned char > &output, const size_t window_size )
 {
     const size_t input_size = input.size();
     if ( input_size == 0 )

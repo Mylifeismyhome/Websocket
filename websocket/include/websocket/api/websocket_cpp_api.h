@@ -28,6 +28,6 @@ SOFTWARE.
 
 #ifdef WEBSOCKET_CPP_API
 
-#include <websocket/core/websocket.hpp>
+#include <websocket/core/websocket.h>
 
 #endif

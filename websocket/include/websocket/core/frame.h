@@ -28,7 +28,7 @@ SOFTWARE.
 
 #include <websocket/defs/frameDefs.h>
 
-#include <websocket/core/byte_stream.hpp>
+#include <websocket/core/byte_stream.h>
 
 /**
  * @class c_ws_frame

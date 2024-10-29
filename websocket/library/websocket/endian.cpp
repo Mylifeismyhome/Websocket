@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <websocket/core/endian.hpp>
+#include <websocket/core/endian.h>
 
 unsigned short
 c_endian::host_to_network_16( const unsigned short value )
@@ -58,6 +58,55 @@ unsigned long long
 c_endian::network_to_host_64( const unsigned long long value )
 {
     return swap_64( value );
+}
+
+unsigned short
+c_endian::little_endian_16( unsigned short value )
+{
+    return is_big() ? swap_16( value ) : value;
+}
+
+unsigned int
+c_endian::little_endian_32( unsigned int value )
+{
+    return is_big() ? swap_32( value ) : value;
+}
+
+unsigned long long
+c_endian::little_endian_64( unsigned long long value )
+{
+    return is_big() ? swap_64( value ) : value;
+}
+
+unsigned short
+c_endian::big_endian_16( unsigned short value )
+{
+    return is_big() ? swap_64( value ) : value;
+}
+
+unsigned int
+c_endian::big_endian_32( unsigned int value )
+{
+    return is_little() ? swap_32( value ) : value;
+}
+
+unsigned long long
+c_endian::big_endian_64( unsigned long long value )
+{
+    return is_little() ? swap_64( value ) : value;
+}
+
+bool
+c_endian::is_little()
+{
+    unsigned int x = 1;
+    return *reinterpret_cast< unsigned char * >( &x ) == 1;
+}
+
+bool
+c_endian::is_big()
+{
+    return !is_little();
 }
 
 unsigned short

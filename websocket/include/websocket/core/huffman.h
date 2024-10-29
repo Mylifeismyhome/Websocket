@@ -33,14 +33,13 @@ public:
      *
      * @param input The input data buffer containing the data to encode.
      * @param output The output buffer where the encoded (compressed) data will be stored.
-     * @param bit_count The total number of bits in the encoded output.
      * @param frequency_table A frequency table mapping each symbol to its frequency in the input data.
      * @return `e_status::status_ok` if encoding was successful; otherwise, `e_status::status_error`.
      *
      * @note Ensure that the output buffer has sufficient space for the encoded data.
      */
     static e_status
-    encode(const std::vector<unsigned char> &input, std::vector<unsigned char> &output, size_t &bit_count, std::map<unsigned char, size_t> &frequency_table);
+    encode(const std::vector<unsigned char> &input, std::vector<unsigned char> &output, std::map<unsigned char, size_t> &frequency_table);
 
     /**
      * @brief Decodes data encoded with the Huffman algorithm.
@@ -49,14 +48,13 @@ public:
      *
      * @param input The input buffer containing encoded data.
      * @param output The output buffer where the decoded (decompressed) data will be stored.
-     * @param bit_count The total number of bits in the encoded data.
      * @param frequency_table The frequency table used for decoding, mapping symbols to their frequency.
      * @return `e_status::status_ok` if decoding was successful; otherwise, `e_status::status_error`.
      *
      * @note Ensure that the output buffer has sufficient space to store the decompressed data.
      */
     static e_status
-    decode(const std::vector<unsigned char> &input, std::vector<unsigned char> &output, size_t bit_count, const std::map<unsigned char, size_t> &frequency_table);
+    decode(const std::vector<unsigned char> &input, std::vector<unsigned char> &output, const std::map<unsigned char, size_t> &frequency_table);
 
     /**
      * @brief Constructs a new c_huffman object.

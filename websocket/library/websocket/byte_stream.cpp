@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <websocket/core/byte_stream.hpp>
+#include <websocket/core/byte_stream.h>
 
 #include <cstring>
 #include <mutex>

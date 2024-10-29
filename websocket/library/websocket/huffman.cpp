@@ -1,4 +1,4 @@
-#include <websocket/core/huffman.hpp>
+#include <websocket/core/huffman.h>
 
 #include <queue>
 #include <stack>
@@ -39,7 +39,7 @@ struct c_huffman::impl_t
 void
 c_huffman::impl_t::huffman_build_frequency_table( const std::vector< unsigned char > &input, std::map< unsigned char, size_t > &frequency )
 {
-    for (unsigned char character : input)
+    for ( unsigned char character : input )
     {
         auto it = frequency.find( character );
         if ( it == frequency.end() )
@@ -57,7 +57,7 @@ c_huffman::impl_t::huffman_build_tree( const std::map< unsigned char, size_t > &
 {
     std::priority_queue< Node *, std::vector< Node * >, Compare > min_heap;
 
-    for ( const auto it : frequency)
+    for ( const auto it : frequency )
     {
         min_heap.emplace( new Node( it.first, it.second ) );
     }
@@ -135,7 +135,7 @@ c_huffman::impl_t::huffman_release_tree( const Node *node )
 }
 
 c_huffman::e_status
-c_huffman::encode( const std::vector< unsigned char > &input, std::vector< unsigned char > &output, size_t &bit_count, std::map< unsigned char, size_t > &frequency_table )
+c_huffman::encode( const std::vector< unsigned char > &input, std::vector< unsigned char > &output, std::map< unsigned char, size_t > &frequency_table )
 {
     impl_t::huffman_build_frequency_table( input, frequency_table );
 
@@ -151,7 +151,9 @@ c_huffman::encode( const std::vector< unsigned char > &input, std::vector< unsig
         return e_status::status_error;
     }
 
-    for (unsigned char character : input)
+    size_t output_length = 0;
+
+    for ( unsigned char character : input )
     {
         auto it = bits_table.find( character );
         if ( it == bits_table.end() )
@@ -162,10 +164,10 @@ c_huffman::encode( const std::vector< unsigned char > &input, std::vector< unsig
 
         std::vector< bool > bits = bits_table[ character ];
 
-        bit_count += bits.size();
+        output_length += bits.size();
     }
 
-    output.resize( ( bit_count + 7 ) / 8 );
+    output.resize( ( output_length + 7 ) / 8 );
 
     for ( size_t i = 0, bit_index = 0; i < input.size(); ++i )
     {
@@ -194,13 +196,16 @@ c_huffman::encode( const std::vector< unsigned char > &input, std::vector< unsig
         }
     }
 
+    // eob
+    output.push_back( 0x1000 );
+
     impl_t::huffman_release_tree( root );
 
     return e_status::status_ok;
 }
 
 c_huffman::e_status
-c_huffman::decode( const std::vector< unsigned char > &input, std::vector< unsigned char > &output, const size_t bit_count, const std::map< unsigned char, size_t >& frequency_table )
+c_huffman::decode( const std::vector< unsigned char > &input, std::vector< unsigned char > &output, const std::map< unsigned char, size_t > &frequency_table )
 {
     const impl_t::Node *root = impl_t::huffman_build_tree( frequency_table );
     if ( !root )
@@ -212,12 +217,19 @@ c_huffman::decode( const std::vector< unsigned char > &input, std::vector< unsig
 
     size_t output_length = 0;
 
-    for ( size_t bits = 0; bits < bit_count; ++bits )
+    for ( size_t bits = 0; bits < input.size() * 8; ++bits )
     {
         const size_t byte_index = bits / 8;
         const size_t bit_position = 7 - bits % 8;
+        const unsigned char value = input[ byte_index ];
 
-        const bool bit = input[ byte_index ] >> bit_position & 1;
+        // eob
+        if ( value == 0x1000 )
+        {
+            break;
+        }
+
+        const bool bit = value >> bit_position & 1;
 
         node = bit ? node->right : node->left;
 
@@ -236,12 +248,19 @@ c_huffman::decode( const std::vector< unsigned char > &input, std::vector< unsig
 
     output.resize( output_length );
 
-    for ( size_t bits = 0, i = 0; bits < bit_count; ++bits )
+    for ( size_t bits = 0, i = 0; bits < input.size() * 8; ++bits )
     {
         const size_t byte_index = bits / 8;
         const size_t bit_position = 7 - bits % 8;
+        const unsigned char value = input[ byte_index ];
 
-        const bool bit = input[ byte_index ] >> bit_position & 1;
+        // eob
+        if ( value == 0x1000 )
+        {
+            break;
+        }
+
+        const bool bit = value >> bit_position & 1;
 
         node = bit ? node->right : node->left;
 
