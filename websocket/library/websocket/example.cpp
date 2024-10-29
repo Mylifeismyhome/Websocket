@@ -138,93 +138,9 @@ websocket_on_error( void *ctx, const char *message )
 }
 #endif
 
-#include <string>
-#include <vector>
-
-#include <websocket/core/flate.hpp>
-#include <websocket/core/huffman.hpp>
-#include <websocket/core/lzss.hpp>
-
 int
 main()
 {
-    // test
-    {
-        printf( "lzss test\n" );
-        {
-            std::string message = "AAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAA";
-
-            std::vector< unsigned char > input( message.begin(), message.end() );
-
-            printf( "original message: %s\n", input.data() );
-            printf( "original length: %llu\n", input.size() );
-
-            std::vector< unsigned char > output;
-            std::map< unsigned char, size_t > frequency_table;
-
-            c_lzss::compress( input, output );
-
-            printf( "compressed length: %llu\n", output.size() );
-
-            std::vector< unsigned char > dec;
-
-            c_lzss::decompress( output, dec, input.size() );
-
-            printf( "decompressed message: %s\n", dec.data() );
-            printf( "decompressed length: %llu\n", dec.size() );
-        }
-
-        printf( "huffman test\n" );
-        {
-            std::string message = "AAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAA";
-
-            std::vector< unsigned char > input( message.begin(), message.end() );
-
-            printf( "original message: %s\n", input.data() );
-            printf( "original length: %llu\n", input.size() );
-
-            std::vector< unsigned char > output;
-
-            size_t bit_count = 0;
-
-            std::map< unsigned char, size_t > frequency_table;
-
-            c_huffman::encode( input, output, bit_count, frequency_table );
-
-            printf( "encoded length: %llu\n", output.size() );
-
-            std::vector< unsigned char > dec;
-
-            c_huffman::decode( output, dec, bit_count, frequency_table );
-
-            printf( "decoded message: %s\n", dec.data() );
-            printf( "decoded length: %llu\n", dec.size() );
-        }
-
-        printf( "flate test\n" );
-        {
-            std::string message = "AAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAAAAAAABBBCCDAAA";
-
-            std::vector< unsigned char > input( message.begin(), message.end() );
-
-            printf( "original message: %s\n", input.data() );
-            printf( "original length: %llu\n", input.size() );
-
-            std::vector< unsigned char > output;
-
-            c_flate::inflate( input, output );
-
-            printf( "compressed length: %llu\n", output.size() );
-
-            std::vector< unsigned char > dec;
-
-            c_flate::deflate( output, dec );
-
-            printf( "decoded message: %s\n", dec.data() );
-            printf( "decoded length: %llu\n", dec.size() );
-        }
-    }
-
 #if defined( _WIN32 ) && !defined( EFIX64 ) && !defined( EFI32 )
     if ( !SetConsoleCtrlHandler( win_console_handler, TRUE ) )
     {
