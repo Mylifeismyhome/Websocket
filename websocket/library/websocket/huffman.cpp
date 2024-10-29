@@ -10,14 +10,14 @@ struct c_huffman::impl_t
         unsigned char character;
         size_t frequency;
         Node *left, *right;
-        Node( unsigned char d, size_t f ) :
+        Node( const unsigned char d, const size_t f ) :
             character( d ), frequency( f ), left( nullptr ), right( nullptr ) {}
     };
 
     struct Compare
     {
         bool
-        operator()( Node *a, Node *b )
+        operator()( const Node *a, const Node *b ) const
         {
             return a->frequency > b->frequency;
         }
@@ -29,7 +29,7 @@ struct c_huffman::impl_t
     static Node *
     huffman_build_tree( const std::map< unsigned char, size_t > &frequency );
 
-    static c_huffman::e_status
+    static e_status
     huffman_build_bits_table( Node *root, std::map< unsigned char, std::vector< bool > > &huffman_bits );
 
     static void
@@ -70,7 +70,7 @@ c_huffman::impl_t::huffman_build_tree( const std::map< unsigned char, size_t > &
         Node *right = min_heap.top();
         min_heap.pop();
 
-        Node *parent = new Node( 0, left->frequency + right->frequency );
+        auto parent = new Node( 0, left->frequency + right->frequency );
         parent->left = left;
         parent->right = right;
 
@@ -137,16 +137,16 @@ c_huffman::impl_t::huffman_release_tree( const Node *node )
 c_huffman::e_status
 c_huffman::encode( const std::vector< unsigned char > &input, std::vector< unsigned char > &output, size_t &bit_count, std::map< unsigned char, size_t > &frequency_table )
 {
-    c_huffman::impl_t::huffman_build_frequency_table( input, frequency_table );
+    impl_t::huffman_build_frequency_table( input, frequency_table );
 
-    c_huffman::impl_t::Node *root = c_huffman::impl_t::huffman_build_tree( frequency_table );
+    impl_t::Node *root = impl_t::huffman_build_tree( frequency_table );
     if ( !root )
     {
         return e_status::status_error;
     }
 
     std::map< unsigned char, std::vector< bool > > bits_table;
-    if ( c_huffman::impl_t::huffman_build_bits_table( root, bits_table ) != e_status::status_ok )
+    if ( impl_t::huffman_build_bits_table( root, bits_table ) != e_status::status_ok )
     {
         return e_status::status_error;
     }
@@ -156,7 +156,7 @@ c_huffman::encode( const std::vector< unsigned char > &input, std::vector< unsig
         auto it = bits_table.find( character );
         if ( it == bits_table.end() )
         {
-            c_huffman::impl_t::huffman_release_tree( root );
+            impl_t::huffman_release_tree( root );
             return e_status::status_error;
         }
 
@@ -165,7 +165,7 @@ c_huffman::encode( const std::vector< unsigned char > &input, std::vector< unsig
         bit_count += bits.size();
     }
 
-    output.resize( ( ( bit_count + 7 ) / 8 ) );
+    output.resize( ( bit_count + 7 ) / 8 );
 
     for ( size_t i = 0, bit_index = 0; i < input.size(); ++i )
     {
@@ -174,56 +174,56 @@ c_huffman::encode( const std::vector< unsigned char > &input, std::vector< unsig
         auto it = bits_table.find( character );
         if ( it == bits_table.end() )
         {
-            c_huffman::impl_t::huffman_release_tree( root );
+            impl_t::huffman_release_tree( root );
             return e_status::status_error;
         }
 
         std::vector< bool > bits = bits_table[ character ];
 
-        for ( bool bit : bits )
+        for ( const bool bit : bits )
         {
-            size_t byte_index = bit_index / 8;
-            size_t bit_position = 7 - ( bit_index % 8 );
+            const size_t byte_index = bit_index / 8;
+            const size_t bit_position = 7 - bit_index % 8;
 
             if ( bit )
             {
-                output[ byte_index ] |= ( 1 << bit_position );
+                output[ byte_index ] |= 1 << bit_position;
             }
 
             bit_index++;
         }
     }
 
-    c_huffman::impl_t::huffman_release_tree( root );
+    impl_t::huffman_release_tree( root );
 
     return e_status::status_ok;
 }
 
 c_huffman::e_status
-c_huffman::decode( const std::vector< unsigned char > &input, std::vector< unsigned char > &output, size_t bit_count, const std::map< unsigned char, size_t >& frequency_table )
+c_huffman::decode( const std::vector< unsigned char > &input, std::vector< unsigned char > &output, const size_t bit_count, const std::map< unsigned char, size_t >& frequency_table )
 {
-    c_huffman::impl_t::Node *root = c_huffman::impl_t::huffman_build_tree( frequency_table );
+    const impl_t::Node *root = impl_t::huffman_build_tree( frequency_table );
     if ( !root )
     {
         return e_status::status_error;
     }
 
-    c_huffman::impl_t::Node *node = root;
+    const impl_t::Node *node = root;
 
     size_t output_length = 0;
 
     for ( size_t bits = 0; bits < bit_count; ++bits )
     {
-        size_t byte_index = bits / 8;
-        size_t bit_position = 7 - ( bits % 8 );
+        const size_t byte_index = bits / 8;
+        const size_t bit_position = 7 - bits % 8;
 
-        bool bit = ( input[ byte_index ] >> bit_position ) & 1;
+        const bool bit = input[ byte_index ] >> bit_position & 1;
 
         node = bit ? node->right : node->left;
 
         if ( !node )
         {
-            c_huffman::impl_t::huffman_release_tree( root );
+            impl_t::huffman_release_tree( root );
             return e_status::status_error;
         }
 
@@ -238,16 +238,16 @@ c_huffman::decode( const std::vector< unsigned char > &input, std::vector< unsig
 
     for ( size_t bits = 0, i = 0; bits < bit_count; ++bits )
     {
-        size_t byte_index = bits / 8;
-        size_t bit_position = 7 - ( bits % 8 );
+        const size_t byte_index = bits / 8;
+        const size_t bit_position = 7 - bits % 8;
 
-        bool bit = ( input[ byte_index ] >> bit_position ) & 1;
+        const bool bit = input[ byte_index ] >> bit_position & 1;
 
         node = bit ? node->right : node->left;
 
         if ( !node )
         {
-            c_huffman::impl_t::huffman_release_tree( root );
+            impl_t::huffman_release_tree( root );
             return e_status::status_error;
         }
 
@@ -258,7 +258,7 @@ c_huffman::decode( const std::vector< unsigned char > &input, std::vector< unsig
         }
     }
 
-    c_huffman::impl_t::huffman_release_tree( root );
+    impl_t::huffman_release_tree( root );
 
     return e_status::status_ok;
 }

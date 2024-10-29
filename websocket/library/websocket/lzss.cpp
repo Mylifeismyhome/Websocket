@@ -42,8 +42,8 @@ c_lzss::compress( const std::vector< unsigned char > &input, std::vector< unsign
         if ( match_length >= LZSS_MIN_MATCH_LENGTH )
         {
             // add match flag
-            output.push_back( LZSS_FLAG_BYTE | ( match_position >> 4 ) );
-            output.push_back( ( ( match_position & 0x0F ) << 4 ) | ( match_length - LZSS_MIN_MATCH_LENGTH ) );
+            output.push_back( LZSS_FLAG_BYTE | match_position >> 4 );
+            output.push_back( ( match_position & 0x0F ) << 4 | match_length - LZSS_MIN_MATCH_LENGTH );
 
             pos += match_length;
         }
@@ -84,7 +84,7 @@ c_lzss::decompress( const std::vector< unsigned char > &input, std::vector< unsi
             }
 
             const unsigned char next_byte = input[ pos++ ];
-            const size_t match_position = ( ( byte & 0x7F ) << 4 ) | ( next_byte >> 4 );
+            const size_t match_position = ( byte & 0x7F ) << 4 | next_byte >> 4;
             const size_t match_length = ( next_byte & 0x0F ) + LZSS_MIN_MATCH_LENGTH;
 
             // copy match from output buffer

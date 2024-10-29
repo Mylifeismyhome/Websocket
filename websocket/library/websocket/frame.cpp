@@ -78,28 +78,32 @@ struct c_ws_frame::impl_t
 
     impl_t()
     {
-        opcode = e_ws_frame_opcode::opcode_binary;
+        opcode = opcode_binary;
         std::memset( key, 0, 4 );
     }
 
-    ~impl_t()
+    ~
+    impl_t()
     {
         payload.close();
     }
 };
 
-c_ws_frame::c_ws_frame()
+c_ws_frame::
+c_ws_frame()
 {
     impl = new impl_t();
 }
 
-c_ws_frame::c_ws_frame( e_ws_frame_opcode opcode )
+c_ws_frame::
+c_ws_frame( const e_ws_frame_opcode opcode )
 {
     impl = new impl_t();
     impl->opcode = opcode;
 }
 
-c_ws_frame::~c_ws_frame()
+c_ws_frame::~
+c_ws_frame()
 {
     if ( impl )
     {
@@ -108,7 +112,8 @@ c_ws_frame::~c_ws_frame()
     }
 }
 
-c_ws_frame::c_ws_frame( const c_ws_frame &other )
+c_ws_frame::
+c_ws_frame( const c_ws_frame &other )
 {
     impl = new impl_t();
     impl->opcode = other.impl->opcode;
@@ -116,7 +121,8 @@ c_ws_frame::c_ws_frame( const c_ws_frame &other )
     impl->payload = other.impl->payload;
 }
 
-c_ws_frame::c_ws_frame( c_ws_frame &&other ) noexcept
+c_ws_frame::
+c_ws_frame( c_ws_frame &&other ) noexcept
 {
     impl = other.impl;
     other.impl = nullptr;
@@ -154,38 +160,38 @@ c_ws_frame::operator=( c_ws_frame &&other ) noexcept
 bool
 c_ws_frame::impl_t::is_masked() const
 {
-    unsigned int value = ( static_cast< uint32_t >( key[ 0 ] ) << 24 ) |
-        ( static_cast< uint32_t >( key[ 1 ] ) << 16 ) |
-        ( static_cast< uint32_t >( key[ 2 ] ) << 8 ) |
-        ( static_cast< uint32_t >( key[ 3 ] ) );
+    const unsigned int value = static_cast< uint32_t >( key[ 0 ] ) << 24 |
+        static_cast< uint32_t >( key[ 1 ] ) << 16 |
+        static_cast< uint32_t >( key[ 2 ] ) << 8 |
+        static_cast< uint32_t >( key[ 3 ] );
 
     return value != 0;
 }
 
 void
-c_ws_frame::mask( unsigned int value )
+c_ws_frame::mask( const unsigned int key ) const
 {
-    impl->key[ 0 ] = ( value >> 24 ) & 0xFF;
-    impl->key[ 1 ] = ( value >> 16 ) & 0xFF;
-    impl->key[ 2 ] = ( value >> 8 ) & 0xFF;
-    impl->key[ 3 ] = value & 0xFF;
+    impl->key[ 0 ] = key >> 24 & 0xFF;
+    impl->key[ 1 ] = key >> 16 & 0xFF;
+    impl->key[ 2 ] = key >> 8 & 0xFF;
+    impl->key[ 3 ] = key & 0xFF;
 }
 
 bool
-c_ws_frame::push( unsigned char *data, size_t size )
+c_ws_frame::push( unsigned char *data, const size_t size ) const
 {
-    return ( impl->payload.push( data, size ) == c_byte_stream::e_status::ok );
+    return impl->payload.push( data, size ) == c_byte_stream::e_status::ok;
 }
 
 bool
-c_ws_frame::push( const char *data )
+c_ws_frame::push( const char *data ) const
 {
-    size_t size = std::strlen( data );
-    return ( impl->payload.push( reinterpret_cast< unsigned char * >( const_cast< char * >( data ) ), size ) == c_byte_stream::e_status::ok );
+    const size_t size = std::strlen( data );
+    return impl->payload.push( reinterpret_cast< unsigned char * >( const_cast< char * >( data ) ), size ) == c_byte_stream::e_status::ok;
 }
 
 void
-c_ws_frame::flush()
+c_ws_frame::flush() const
 {
     impl->payload.flush();
 }
@@ -215,30 +221,30 @@ c_ws_frame::is_payload_utf8() const
 }
 
 e_ws_frame_status
-c_ws_frame::write( c_byte_stream *output )
+c_ws_frame::write( c_byte_stream *output ) const
 {
     switch ( impl->opcode )
     {
-        case e_ws_frame_opcode::opcode_text:
-        case e_ws_frame_opcode::opcode_binary:
-        case e_ws_frame_opcode::opcode_close:
-        case e_ws_frame_opcode::opcode_ping:
-        case e_ws_frame_opcode::opcode_pong:
+        case opcode_text:
+        case opcode_binary:
+        case opcode_close:
+        case opcode_ping:
+        case opcode_pong:
             break;
 
         default:
             return e_ws_frame_status::status_error;
     }
 
-    return c_ws_frame::impl_t::encode( impl->opcode, impl->is_masked(), reinterpret_cast< unsigned char * >( &impl->key ), &impl->payload, output );
+    return impl_t::encode( impl->opcode, impl->is_masked(), reinterpret_cast< unsigned char * >( &impl->key ), &impl->payload, output );
 }
 
 e_ws_frame_status
-c_ws_frame::read( c_byte_stream *input )
+c_ws_frame::read( c_byte_stream *input ) const
 {
-    e_ws_frame_opcode out_opcode = e_ws_frame_opcode::opcode_binary;
+    e_ws_frame_opcode out_opcode = opcode_binary;
 
-    e_ws_frame_status status = c_ws_frame::impl_t::decode( input, &impl->payload, out_opcode );
+    const e_ws_frame_status status = impl_t::decode( input, &impl->payload, out_opcode );
 
     impl->opcode = out_opcode;
 
@@ -246,7 +252,7 @@ c_ws_frame::read( c_byte_stream *input )
 }
 
 e_ws_frame_status
-c_ws_frame::impl_t::encode( e_ws_frame_opcode opcode, bool mask, unsigned char *mask_key, c_byte_stream *input, c_byte_stream *output )
+c_ws_frame::impl_t::encode( const e_ws_frame_opcode opcode, const bool mask, unsigned char *mask_key, c_byte_stream *input, c_byte_stream *output )
 {
     if ( !output )
     {
@@ -261,11 +267,11 @@ c_ws_frame::impl_t::encode( e_ws_frame_opcode opcode, bool mask, unsigned char *
 
         ws_frame_byte1_t byte1{};
 
-        byte1.bits.fin = ( size <= CHUNK_SIZE );
+        byte1.bits.fin = size <= CHUNK_SIZE;
         byte1.bits.rsv1 = false; // < extension, used to indicate compression
         byte1.bits.rsv2 = false; // < not in use yet.
         byte1.bits.rsv3 = false; // < not in use yet.
-        byte1.bits.opcode = ( offset == 0 ? opcode : e_ws_frame_opcode::opcode_continuation );
+        byte1.bits.opcode = offset == 0 ? opcode : opcode_continuation;
 
         if ( fragment.push_back( byte1.value ) != c_byte_stream::e_status::ok )
         {
@@ -276,7 +282,7 @@ c_ws_frame::impl_t::encode( e_ws_frame_opcode opcode, bool mask, unsigned char *
 
         byte2.bits.mask = mask;
 
-        size_t payload_length = std::min< size_t >( CHUNK_SIZE, size );
+        const size_t payload_length = std::min< size_t >( CHUNK_SIZE, size );
 
         if ( payload_length > 65535 )
         {
@@ -289,7 +295,7 @@ c_ws_frame::impl_t::encode( e_ws_frame_opcode opcode, bool mask, unsigned char *
             }
 
             // 64-bit host to network endian conversion
-            unsigned long long network_payload_length = c_endian::host_to_network_64( static_cast< unsigned long long >( payload_length ) );
+            unsigned long long network_payload_length = c_endian::host_to_network_64( payload_length );
 
             // write 64-bit value
             if ( fragment.push_back( reinterpret_cast< unsigned char * >( &network_payload_length ), 8 ) != c_byte_stream::e_status::ok )
@@ -375,7 +381,7 @@ c_ws_frame::impl_t::encode( e_ws_frame_opcode opcode, bool mask, unsigned char *
 }
 
 e_ws_frame_status
-c_ws_frame::impl_t::decode( c_byte_stream *input, c_byte_stream *output, e_ws_frame_opcode &opcode)
+c_ws_frame::impl_t::decode( c_byte_stream *input, c_byte_stream *output, e_ws_frame_opcode &opcode )
 {
     if ( !input || !output )
     {
@@ -400,7 +406,7 @@ c_ws_frame::impl_t::decode( c_byte_stream *input, c_byte_stream *output, e_ws_fr
 
     switch ( byte1.bits.opcode )
     {
-        case e_ws_frame_opcode::opcode_continuation:
+        case opcode_continuation:
         {
             if ( byte1.bits.fin )
             {
@@ -409,28 +415,28 @@ c_ws_frame::impl_t::decode( c_byte_stream *input, c_byte_stream *output, e_ws_fr
             break;
         }
 
-        case e_ws_frame_opcode::opcode_text:
-        case e_ws_frame_opcode::opcode_binary:
-        case e_ws_frame_opcode::opcode_close:
-        case e_ws_frame_opcode::opcode_ping:
-        case e_ws_frame_opcode::opcode_pong:
+        case opcode_text:
+        case opcode_binary:
+        case opcode_close:
+        case opcode_ping:
+        case opcode_pong:
         {
             opcode = byte1.bits.opcode;
             break;
         }
 
         // further planned non control
-        case e_ws_frame_opcode::opcode_rsv1_further_non_control:
-        case e_ws_frame_opcode::opcode_rsv2_further_non_control:
-        case e_ws_frame_opcode::opcode_rsv3_further_non_control:
-        case e_ws_frame_opcode::opcode_rsv4_further_non_control:
-        case e_ws_frame_opcode::opcode_rsv5_further_non_control:
+        case opcode_rsv1_further_non_control:
+        case opcode_rsv2_further_non_control:
+        case opcode_rsv3_further_non_control:
+        case opcode_rsv4_further_non_control:
+        case opcode_rsv5_further_non_control:
         // further planned control
-        case e_ws_frame_opcode::opcode_rsv1_further_control:
-        case e_ws_frame_opcode::opcode_rsv2_further_control:
-        case e_ws_frame_opcode::opcode_rsv3_further_control:
-        case e_ws_frame_opcode::opcode_rsv4_further_control:
-        case e_ws_frame_opcode::opcode_rsv5_further_control:
+        case opcode_rsv1_further_control:
+        case opcode_rsv2_further_control:
+        case opcode_rsv3_further_control:
+        case opcode_rsv4_further_control:
+        case opcode_rsv5_further_control:
         {
             // those opcodes are reserved and are not being used yet.
             return e_ws_frame_status::status_error;
@@ -475,7 +481,7 @@ c_ws_frame::impl_t::decode( c_byte_stream *input, c_byte_stream *output, e_ws_fr
         }
 
         // 64-bit network to host endian conversion
-        payload_length = c_endian::network_to_host_64( static_cast< unsigned long long >( payload_length ) );
+        payload_length = c_endian::network_to_host_64( payload_length );
 
         // move by 8-bytes
         offset += 8;
@@ -486,7 +492,7 @@ c_ws_frame::impl_t::decode( c_byte_stream *input, c_byte_stream *output, e_ws_fr
         return e_ws_frame_status::status_incomplete;
     }
 
-    unsigned char mask_key[ 4 ] = { 0 };
+    unsigned char mask_key[ 4 ] = {};
 
     if ( byte2.bits.mask )
     {
@@ -538,7 +544,7 @@ c_ws_frame::impl_t::decode( c_byte_stream *input, c_byte_stream *output, e_ws_fr
     if ( byte1.bits.fin )
     {
         // push null-terminator to indicate end of sequence
-        if ( byte1.bits.opcode == e_ws_frame_opcode::opcode_text )
+        if ( byte1.bits.opcode == opcode_text )
         {
             output->push_back( '\0' );
         }

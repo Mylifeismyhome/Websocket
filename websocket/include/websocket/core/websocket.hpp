@@ -67,8 +67,6 @@
 
 #include <websocket/core/frame.hpp>
 
-#include <stddef.h>
-
 /**
  * @brief Websocket skeleton
  *
@@ -357,7 +355,7 @@ public:
      *         `false` if no active file descriptors are present.
      */
     bool
-    operate();
+    operate() const;
 
     /**
      * @brief Sends a WebSocket frame to the specified file descriptor.
@@ -376,7 +374,7 @@ public:
      *         - `e_ws_status::status_error` if the write operation fails.
      */
     e_ws_status
-    emit( int fd, c_ws_frame *frame );
+    emit( int fd, const c_ws_frame *frame ) const;
 
 private:
     /**

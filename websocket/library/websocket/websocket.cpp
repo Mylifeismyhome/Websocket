@@ -41,7 +41,6 @@ SOFTWARE.
 
 #include <mbedtls/build_info.h>
 #include <mbedtls/ctr_drbg.h>
-#include <mbedtls/debug.h>
 #include <mbedtls/entropy.h>
 #include <mbedtls/error.h>
 #include <mbedtls/net_sockets.h>
@@ -76,7 +75,7 @@ struct addr_t
 
     addr_t();
 
-    addr_t( unsigned char *in_bytes, size_t in_len );
+    addr_t( const unsigned char *in_bytes, size_t in_len );
 
     explicit addr_t( const char *in_raw );
 
@@ -312,7 +311,7 @@ addr_t::addr_t()
     raw = {};
 }
 
-addr_t::addr_t( unsigned char *in_bytes, size_t in_len )
+addr_t::addr_t( const unsigned char *in_bytes, const size_t in_len )
 {
     std::memcpy( bytes, in_bytes, sizeof( bytes ) );
     len = in_len;
@@ -731,7 +730,7 @@ c_websocket::impl_t::communicate( file_descriptor_context *ctx )
         {
             unsigned char buffer[ CHUNK_SIZE ];
 
-            int status = -1;
+            int status;
 
             if ( mode == mode_secured )
             {
@@ -835,14 +834,14 @@ c_websocket::impl_t::communicate( file_descriptor_context *ctx )
                                                     return;
                                                 }
 
-                                                std::thread( &c_websocket::impl_t::async_ws_frame, this, ctx->net.fd, std::move( ctx->frame ) ).detach();
+                                                std::thread( &impl_t::async_ws_frame, this, ctx->net.fd, std::move( ctx->frame ) ).detach();
                                                 ctx->frame = {};
                                                 break;
                                             }
 
                                             case opcode_binary:
                                             {
-                                                std::thread( &c_websocket::impl_t::async_ws_frame, this, ctx->net.fd, std::move( ctx->frame ) ).detach();
+                                                std::thread( &impl_t::async_ws_frame, this, ctx->net.fd, std::move( ctx->frame ) ).detach();
                                                 ctx->frame = {};
                                                 break;
                                             }
@@ -947,7 +946,7 @@ c_websocket::impl_t::communicate( file_descriptor_context *ctx )
             {
                 const size_t length = ctx->stream.output.size() > CHUNK_SIZE ? CHUNK_SIZE : ctx->stream.output.size();
 
-                int status = -1;
+                int status;
 
                 if ( mode == mode_secured )
                 {
@@ -1348,13 +1347,13 @@ c_websocket::on( const char *event, void *callback )
 }
 
 bool
-c_websocket::operate()
+c_websocket::operate() const
 {
     return impl->operate();
 }
 
 e_ws_status
-c_websocket::emit( int fd, c_ws_frame *frame )
+c_websocket::emit( const int fd, const c_ws_frame *frame ) const
 {
     if ( !frame )
     {

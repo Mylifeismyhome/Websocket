@@ -1,7 +1,5 @@
 #pragma once
 
-#include <cstdint>
-
 /** \cond */
 class c_endian final
 {

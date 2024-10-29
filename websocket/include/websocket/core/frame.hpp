@@ -51,7 +51,7 @@ class WEBSOCKET_API c_ws_frame final
      * @internal
      */
     e_ws_frame_status
-    write( c_byte_stream *output );
+    write( c_byte_stream *output ) const;
 
     /**
      * @brief Reads the frame from an input buffer (internal use only).
@@ -65,12 +65,12 @@ class WEBSOCKET_API c_ws_frame final
      * @internal
      */
     e_ws_frame_status
-    read( c_byte_stream *input );
+    read( c_byte_stream *input ) const;
 
 public:
     c_ws_frame();
 
-    c_ws_frame( e_ws_frame_opcode opcode );
+    explicit c_ws_frame( e_ws_frame_opcode opcode );
 
     ~c_ws_frame();
 
@@ -92,7 +92,7 @@ public:
      * @param[in] key The masking key to apply.
      */
     void
-    mask( unsigned int key );
+    mask( unsigned int key ) const;
 
     /**
      * @brief Appends data to the WebSocket frame payload.
@@ -104,7 +104,7 @@ public:
      * @return `true` if the data is successfully added, `false` otherwise.
      */
     bool
-    push( unsigned char *data, size_t size );
+    push( unsigned char *data, size_t size ) const;
 
     /**
      * @brief Appends a null-terminated string to the WebSocket frame payload.
@@ -115,7 +115,7 @@ public:
      * @return `true` if the string is successfully added, `false` otherwise.
      */
     bool
-    push( const char *data );
+    push( const char *data ) const;
 
     /**
      * @brief Clears the WebSocket frame payload.
@@ -123,7 +123,7 @@ public:
      * Resets the payload, removing all data currently held in the frame.
      */
     void
-    flush();
+    flush() const;
 
     /**
      * @brief Retrieves the WebSocket frame opcode.

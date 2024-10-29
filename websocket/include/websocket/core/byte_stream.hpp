@@ -39,7 +39,7 @@ public:
         out_of_bound /**< Operation attempted to access out-of-bound memory. */
     };
 
-    static constexpr size_t npos = ( size_t )( ~0 ); /**< Represents an invalid index. */
+    static constexpr size_t npos = ( size_t )~0; /**< Represents an invalid index. */
 
 public:
     c_byte_stream();

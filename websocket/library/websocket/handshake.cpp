@@ -54,7 +54,7 @@ string_to_lower( const std::string &str )
 {
     std::string result = str;
 
-    std::transform( result.begin(), result.end(), result.begin(), []( unsigned char c )
+    std::transform( result.begin(), result.end(), result.begin(), []( const unsigned char c )
         { return std::tolower( c ); } );
 
     return result;
@@ -63,8 +63,8 @@ string_to_lower( const std::string &str )
 static bool
 string_contains_case_insensitive( const std::string &mainStr, const std::string &subStr )
 {
-    std::string lowerMainStr = string_to_lower( mainStr );
-    std::string lowerSubStr = string_to_lower( subStr );
+    const std::string lowerMainStr = string_to_lower( mainStr );
+    const std::string lowerSubStr = string_to_lower( subStr );
 
     return lowerMainStr.find( lowerSubStr ) != std::string::npos;
 }
@@ -110,7 +110,7 @@ trim( const std::string &s )
 {
     const size_t start = s.find_first_not_of( " \t\r\n" );
     const size_t end = s.find_last_not_of( " \t\r\n" );
-    return ( start == std::string::npos || end == std::string::npos ) ? "" : s.substr( start, end - start + 1 );
+    return start == std::string::npos || end == std::string::npos ? "" : s.substr( start, end - start + 1 );
 }
 
 static std::map< std::string, std::string >
@@ -143,23 +143,23 @@ parse_http_header( unsigned char *buffer, const size_t len )
 }
 
 void
-c_ws_handshake::respond( int status_code, const char *message, c_byte_stream *output )
+c_ws_handshake::respond( const int status_code, const char *message, c_byte_stream *output )
 {
     if ( !output )
     {
         return;
     }
 
-    ( *output ) << "HTTP/1.1 " << status_code << " " << message << "\r\n ";
-    ( *output ) << "Content-Length: 0\r\n";
-    ( *output ) << "Connection: close\r\n";
-    ( *output ) << "\r\n";
+    *output << "HTTP/1.1 " << status_code << " " << message << "\r\n ";
+    *output << "Content-Length: 0\r\n";
+    *output << "Connection: close\r\n";
+    *output << "\r\n";
 }
 
 c_ws_handshake::e_status
 c_ws_handshake::random( const size_t count, std::string &output )
 {
-    constexpr const char *pers = "websocket_handshake_random";
+    constexpr auto pers = "websocket_handshake_random";
 
     auto *block = static_cast< unsigned char * >( malloc( sizeof( unsigned char ) * count ) );
 
@@ -328,7 +328,7 @@ c_ws_handshake::client( const char *accept_key, c_byte_stream *input, c_byte_str
         return busy;
     }
 
-    std::unique_ptr< unsigned char[] > header_buffer( new unsigned char[ header_end ] );
+    const std::unique_ptr< unsigned char[] > header_buffer( new unsigned char[ header_end ] );
 
     if ( input->pull( header_buffer.get(), header_end ) != c_byte_stream::e_status::ok )
     {
@@ -418,7 +418,7 @@ c_ws_handshake::server( const char *host, const char *origin, c_byte_stream *inp
         return busy;
     }
 
-    std::unique_ptr< unsigned char[] > header_buffer( new unsigned char[ header_end ] );
+    const std::unique_ptr< unsigned char[] > header_buffer( new unsigned char[ header_end ] );
 
     if ( input->pull( header_buffer.get(), header_end ) != c_byte_stream::e_status::ok )
     {
@@ -526,11 +526,11 @@ c_ws_handshake::server( const char *host, const char *origin, c_byte_stream *inp
         return error;
     }
 
-    ( *output ) << "HTTP/1.1 101 Switching Protocols\r\n";
-    ( *output ) << "Upgrade: websocket\r\n";
-    ( *output ) << "Connection: Upgrade\r\n";
-    ( *output ) << "Sec-WebSocket-Accept: " << accept.c_str() << "\r\n";
-    ( *output ) << "\r\n";
+    *output << "HTTP/1.1 101 Switching Protocols\r\n";
+    *output << "Upgrade: websocket\r\n";
+    *output << "Connection: Upgrade\r\n";
+    *output << "Sec-WebSocket-Accept: " << accept.c_str() << "\r\n";
+    *output << "\r\n";
 
     return ok;
 }

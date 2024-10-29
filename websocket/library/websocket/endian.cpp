@@ -25,65 +25,65 @@ SOFTWARE.
 #include <websocket/core/endian.hpp>
 
 unsigned short
-c_endian::host_to_network_16( unsigned short value )
+c_endian::host_to_network_16( const unsigned short value )
 {
     return swap_16( value );
 }
 
 unsigned int
-c_endian::host_to_network_32( unsigned int value )
+c_endian::host_to_network_32( const unsigned int value )
 {
     return swap_32( value );
 }
 
 unsigned long long
-c_endian::host_to_network_64( unsigned long long value )
+c_endian::host_to_network_64( const unsigned long long value )
 {
     return swap_64( value );
 }
 
 unsigned short
-c_endian::network_to_host_16( unsigned short value )
+c_endian::network_to_host_16( const unsigned short value )
 {
     return swap_16( value );
 }
 
 unsigned int
-c_endian::network_to_host_32( unsigned int value )
+c_endian::network_to_host_32( const unsigned int value )
 {
     return swap_32( value );
 }
 
 unsigned long long
-c_endian::network_to_host_64( unsigned long long value )
+c_endian::network_to_host_64( const unsigned long long value )
 {
     return swap_64( value );
 }
 
 unsigned short
-c_endian::swap_16( unsigned short value )
+c_endian::swap_16( const unsigned short value )
 {
-    return ( value << 8 ) | ( value >> 8 );
+    return value << 8 | value >> 8;
 }
 
 unsigned int
-c_endian::swap_32( unsigned int value )
+c_endian::swap_32( const unsigned int value )
 {
-    return ( ( value >> 24 ) & 0x000000FF ) |
-        ( ( value >> 8 ) & 0x0000FF00 ) |
-        ( ( value << 8 ) & 0x00FF0000 ) |
-        ( ( value << 24 ) & 0xFF000000 );
+    return value >> 24 & 0x000000FF |
+        value >> 8 & 0x0000FF00 |
+        value << 8 & 0x00FF0000 |
+        value << 24 & 0xFF000000;
 }
 
 unsigned long long
-c_endian::swap_64( unsigned long long value )
+c_endian::swap_64( const unsigned long long value )
 {
-    return ( ( value >> 56 ) & 0x00000000000000FFULL ) |
-        ( ( value >> 40 ) & 0x000000000000FF00ULL ) |
-        ( ( value >> 24 ) & 0x0000000000FF0000ULL ) |
-        ( ( value >> 8 ) & 0x00000000FF000000ULL ) |
-        ( ( value << 8 ) & 0x000000FF00000000ULL ) |
-        ( ( value << 24 ) & 0x0000FF0000000000ULL ) |
-        ( ( value << 40 ) & 0x00FF000000000000ULL ) |
-        ( ( value << 56 ) & 0xFF00000000000000ULL );
+    return value >> 56 & 0x00000000000000FFULL |
+        value >> 40 & 0x000000000000FF00ULL |
+        value >> 24 & 0x0000000000FF0000ULL |
+        value >> 8 & 0x00000000FF000000ULL |
+        value << 8 & 0x000000FF00000000ULL |
+        value << 24 & 0x0000FF0000000000ULL |
+        value << 40 & 0x00FF000000000000ULL |
+        value << 56 & 0xFF00000000000000ULL;
 }
