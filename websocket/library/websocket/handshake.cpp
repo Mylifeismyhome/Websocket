@@ -75,7 +75,7 @@ string_contains_case_insensitive( const std::string &mainStr, const std::string 
  * This is a static constant string that represents the HTTP/1.1
  * protocol as specified in RFC 2616.
  */
-static constexpr const char HTTP_HEADER[] = "HTTP/1.1";
+static constexpr char HTTP_HEADER[] = "HTTP/1.1";
 
 /**
  * @brief The size of the HTTP_HEADER string.
@@ -91,7 +91,7 @@ static constexpr size_t HTTP_HEADER_SIZE = constexpr_strlen( HTTP_HEADER );
  * This is a static constant string that represents the WebSocket
  * magic GUID as specified in RFC 4122.
  */
-static constexpr const char WS_MAGIC[] = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+static constexpr char WS_MAGIC[] = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
 /**
  * @brief The size of the WS_MAGIC string.
@@ -101,32 +101,36 @@ static constexpr const char WS_MAGIC[] = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
  */
 static constexpr size_t WS_MAGIC_SIZE = constexpr_strlen( WS_MAGIC );
 
+static constexpr char HTTP_SWITCH_WS[] = "HTTP/1.1 101 Switching Protocols";
+
+static constexpr size_t HTTP_SWITCH_WS_SIZE = constexpr_strlen( HTTP_SWITCH_WS );
+
 std::string
 trim( const std::string &s )
 {
-    size_t start = s.find_first_not_of( " \t\r\n" );
-    size_t end = s.find_last_not_of( " \t\r\n" );
+    const size_t start = s.find_first_not_of( " \t\r\n" );
+    const size_t end = s.find_last_not_of( " \t\r\n" );
     return ( start == std::string::npos || end == std::string::npos ) ? "" : s.substr( start, end - start + 1 );
 }
 
 static std::map< std::string, std::string >
-parse_http_header( unsigned char *buffer, size_t len )
+parse_http_header( unsigned char *buffer, const size_t len )
 {
     std::map< std::string, std::string > headers;
 
-    std::string input( reinterpret_cast< char * >( buffer ), len );
+    const std::string input( reinterpret_cast< char * >( buffer ), len );
 
     std::istringstream stream( input );
     std::string line;
 
     while ( std::getline( stream, line ) )
     {
-        size_t colon_pos = line.find( ':' );
+        const size_t colon_pos = line.find( ':' );
 
         if ( colon_pos != std::string::npos )
         {
             std::string key = trim( line.substr( 0, colon_pos ) );
-            std::string value = trim( line.substr( colon_pos + 1 ) );
+            const std::string value = trim( line.substr( colon_pos + 1 ) );
 
             if ( !key.empty() )
             {
@@ -153,11 +157,11 @@ c_ws_handshake::respond( int status_code, const char *message, c_byte_stream *ou
 }
 
 c_ws_handshake::e_status
-c_ws_handshake::random( size_t count, std::string &output )
+c_ws_handshake::random( const size_t count, std::string &output )
 {
     constexpr const char *pers = "websocket_handshake_random";
 
-    unsigned char *block = reinterpret_cast< unsigned char * >( malloc( sizeof( unsigned char ) * count ) );
+    auto *block = static_cast< unsigned char * >( malloc( sizeof( unsigned char ) * count ) );
 
     mbedtls_entropy_context entropy;
     mbedtls_ctr_drbg_context ctr_drbg;
@@ -165,30 +169,30 @@ c_ws_handshake::random( size_t count, std::string &output )
     mbedtls_entropy_init( &entropy );
     mbedtls_ctr_drbg_init( &ctr_drbg );
 
-    if ( mbedtls_ctr_drbg_seed( &ctr_drbg, mbedtls_entropy_func, &entropy, ( const unsigned char * )pers, strlen( pers ) ) != 0 )
+    if ( mbedtls_ctr_drbg_seed( &ctr_drbg, mbedtls_entropy_func, &entropy, reinterpret_cast< const unsigned char * >( pers ), strlen( pers ) ) != 0 )
     {
         mbedtls_ctr_drbg_free( &ctr_drbg );
         mbedtls_entropy_free( &entropy );
-        return e_status::error;
+        return error;
     }
 
     if ( mbedtls_ctr_drbg_random( &ctr_drbg, block, count ) != 0 )
     {
         mbedtls_ctr_drbg_free( &ctr_drbg );
         mbedtls_entropy_free( &entropy );
-        return e_status::error;
+        return error;
     }
 
     mbedtls_ctr_drbg_free( &ctr_drbg );
     mbedtls_entropy_free( &entropy );
 
-    output.assign( std::move( reinterpret_cast< char * >( block ) ) );
+    output.assign( reinterpret_cast< char * >( block ) );
 
-    return e_status::ok;
+    return ok;
 }
 
 c_ws_handshake::e_status
-c_ws_handshake::secret( std::string input, std::string &output )
+c_ws_handshake::secret( const std::string &input, std::string &output )
 {
     // create sha1 hash
     unsigned char hash[ 20 ];
@@ -198,22 +202,22 @@ c_ws_handshake::secret( std::string input, std::string &output )
 
     if ( mbedtls_sha1_starts( &sha1_ctx ) != 0 )
     {
-        return e_status::error;
+        return error;
     }
 
     if ( mbedtls_sha1_update( &sha1_ctx, reinterpret_cast< const unsigned char * >( input.c_str() ), input.size() ) != 0 )
     {
-        return e_status::error;
+        return error;
     }
 
     if ( mbedtls_sha1_update( &sha1_ctx, reinterpret_cast< const unsigned char * >( WS_MAGIC ), WS_MAGIC_SIZE ) != 0 )
     {
-        return e_status::error;
+        return error;
     }
 
     if ( mbedtls_sha1_finish( &sha1_ctx, hash ) != 0 )
     {
-        return e_status::error;
+        return error;
     }
 
     mbedtls_sha1_free( &sha1_ctx );
@@ -223,13 +227,13 @@ c_ws_handshake::secret( std::string input, std::string &output )
     size_t olen = 0;
     if ( mbedtls_base64_encode( b64, 30, &olen, hash, 20 ) != 0 )
     {
-        return e_status::error;
+        return error;
     }
 
     // assign base64 encoded to output
     output.assign( reinterpret_cast< const char * >( b64 ), 30 );
 
-    return e_status::ok;
+    return ok;
 }
 
 c_ws_handshake::e_status
@@ -237,32 +241,32 @@ c_ws_handshake::create( const char *host, const char *origin, const char *channe
 {
     if ( !output )
     {
-        return e_status::error;
+        return error;
     }
 
     // generate 16-byte random block
     std::string sec_websocket_key;
 
-    if ( c_ws_handshake::random( 16, sec_websocket_key ) != e_status::ok )
+    if ( random( 16, sec_websocket_key ) != ok )
     {
-        return e_status::error;
+        return error;
     }
 
     // base64 encode secret-key
-    unsigned char b64[ 30 ];
+    unsigned char b64[ 45 ];
     size_t olen = 0;
 
     if ( mbedtls_base64_encode( b64, sizeof( b64 ), &olen, reinterpret_cast< const unsigned char * >( sec_websocket_key.c_str() ), sec_websocket_key.size() ) != 0 )
     {
-        return e_status::error;
+        return error;
     }
 
     // create accept-key out of secret-key
     std::string accept_key;
 
-    if ( c_ws_handshake::secret( std::string( reinterpret_cast< const char * >( b64 ), olen ), accept_key ) != e_status::ok )
+    if ( secret( std::string( reinterpret_cast< const char * >( b64 ), olen ), accept_key ) != ok )
     {
-        return e_status::error;
+        return error;
     }
 
     // create request
@@ -284,12 +288,12 @@ c_ws_handshake::create( const char *host, const char *origin, const char *channe
 
     if ( request.move( output, request.size(), 0 ) != c_byte_stream::e_status::ok )
     {
-        return e_status::error;
+        return error;
     }
 
     out_accept_key = accept_key;
 
-    return e_status::ok;
+    return ok;
 }
 
 c_ws_handshake::e_status
@@ -297,31 +301,31 @@ c_ws_handshake::client( const char *accept_key, c_byte_stream *input, c_byte_str
 {
     if ( !output )
     {
-        return e_status::error;
+        return error;
     }
 
     if ( !input )
     {
         respond( 500, "Internal Server Error", output );
-        return e_status::error;
+        return error;
     }
 
     if ( !input->available() )
     {
-        return e_status::busy;
+        return busy;
     }
 
-    if ( input->index_of( reinterpret_cast< unsigned char * >( ( char * )"HTTP/1.1 101 Switching Protocols" ), strlen( "HTTP/1.1 101 Switching Protocols" ) ) == c_byte_stream::npos )
+    if ( input->index_of( reinterpret_cast< unsigned char * >( const_cast< char * >( HTTP_SWITCH_WS ) ), HTTP_SWITCH_WS_SIZE ) == c_byte_stream::npos )
     {
         respond( 400, "Bad Request", output );
-        return e_status::error;
+        return error;
     }
 
     // verify http header is present
-    size_t header_end = input->index_of( reinterpret_cast< unsigned char * >( ( char * )"\r\n\r\n" ), 4 );
+    size_t header_end = input->index_of( reinterpret_cast< unsigned char * >( const_cast< char * >( "\r\n\r\n" ) ), 4 );
     if ( header_end == c_byte_stream::npos )
     {
-        return e_status::busy;
+        return busy;
     }
 
     std::unique_ptr< unsigned char[] > header_buffer( new unsigned char[ header_end ] );
@@ -329,7 +333,7 @@ c_ws_handshake::client( const char *accept_key, c_byte_stream *input, c_byte_str
     if ( input->pull( header_buffer.get(), header_end ) != c_byte_stream::e_status::ok )
     {
         respond( 500, "Internal Server Error", output );
-        return e_status::error;
+        return error;
     }
 
     // no need of body data
@@ -339,7 +343,7 @@ c_ws_handshake::client( const char *accept_key, c_byte_stream *input, c_byte_str
     if ( header.empty() )
     {
         respond( 400, "Bad Request", output );
-        return e_status::error;
+        return error;
     }
 
     // verify required attributes are present
@@ -348,37 +352,37 @@ c_ws_handshake::client( const char *accept_key, c_byte_stream *input, c_byte_str
         header.find( "Sec-WebSocket-Accept" ) == header.end() )
     {
         respond( 400, "Bad Request", output );
-        return e_status::error;
+        return error;
     }
 
     // verify |Upgrade| header field contains websocket
-    std::string header_upgrade = header[ "Upgrade" ];
+    const std::string header_upgrade = header[ "Upgrade" ];
 
     if ( !string_contains_case_insensitive( header_upgrade, "websocket" ) )
     {
         respond( 400, "Bad Request", output );
-        return e_status::error;
+        return error;
     }
 
     // verify |Connection| header field contains upgrade
-    std::string header_connetion = header[ "Connection" ];
+    const std::string header_connetion = header[ "Connection" ];
 
     if ( !string_contains_case_insensitive( header_connetion, "upgrade" ) )
     {
         respond( 400, "Bad Request", output );
-        return e_status::error;
+        return error;
     }
 
-    std::string sec_websocket_accept = header[ "Sec-WebSocket-Accept" ];
+    const std::string sec_websocket_accept = header[ "Sec-WebSocket-Accept" ];
 
     // verify |Sec-WebSocket-Accept| header field matches accept-key
     if ( std::strcmp( sec_websocket_accept.c_str(), accept_key ) != 0 )
     {
         respond( 400, "Bad Request", output );
-        return e_status::error;
+        return error;
     }
 
-    return e_status::ok;
+    return ok;
 }
 
 c_ws_handshake::e_status
@@ -386,32 +390,32 @@ c_ws_handshake::server( const char *host, const char *origin, c_byte_stream *inp
 {
     if ( !output )
     {
-        return e_status::error;
+        return error;
     }
 
     if ( !input )
     {
         respond( 500, "Internal Server Error", output );
-        return e_status::error;
+        return error;
     }
 
     if ( !input->available() )
     {
-        return e_status::busy;
+        return busy;
     }
 
     // verify http header is present
-    if ( input->index_of( reinterpret_cast< unsigned char * >( ( char * )HTTP_HEADER ), HTTP_HEADER_SIZE ) == c_byte_stream::npos )
+    if ( input->index_of( reinterpret_cast< unsigned char * >( const_cast< char * >( HTTP_HEADER ) ), HTTP_HEADER_SIZE ) == c_byte_stream::npos )
     {
         respond( 400, "Bad Request", output );
-        return e_status::error;
+        return error;
     }
 
     // verify http header is entirely present
-    size_t header_end = input->index_of( reinterpret_cast< unsigned char * >( ( char * )"\r\n\r\n" ), 4 );
+    size_t header_end = input->index_of( reinterpret_cast< unsigned char * >( const_cast< char * >( "\r\n\r\n" ) ), 4 );
     if ( header_end == c_byte_stream::npos )
     {
-        return e_status::busy;
+        return busy;
     }
 
     std::unique_ptr< unsigned char[] > header_buffer( new unsigned char[ header_end ] );
@@ -419,7 +423,7 @@ c_ws_handshake::server( const char *host, const char *origin, c_byte_stream *inp
     if ( input->pull( header_buffer.get(), header_end ) != c_byte_stream::e_status::ok )
     {
         respond( 500, "Internal Server Error", output );
-        return e_status::error;
+        return error;
     }
 
     // no further need of holding body data after extracted header
@@ -429,7 +433,7 @@ c_ws_handshake::server( const char *host, const char *origin, c_byte_stream *inp
     if ( header.empty() )
     {
         respond( 400, "Bad Request", output );
-        return e_status::error;
+        return error;
     }
 
     // verify required attributes are present
@@ -440,43 +444,43 @@ c_ws_handshake::server( const char *host, const char *origin, c_byte_stream *inp
         header.find( "Sec-WebSocket-Version" ) == header.end() )
     {
         respond( 400, "Bad Request", output );
-        return e_status::error;
+        return error;
     }
 
     // verify |Host| header field containing the server's authority
-    std::string header_host = header[ "Host" ];
+    const std::string header_host = header[ "Host" ];
 
     if ( std::strcmp( header_host.c_str(), host ) != 0 )
     {
         respond( 400, "Bad Request", output );
-        return e_status::error;
+        return error;
     }
 
     // verify |Upgrade| header field contains websocket
-    std::string header_upgrade = header[ "Upgrade" ];
+    const std::string header_upgrade = header[ "Upgrade" ];
 
     if ( !string_contains_case_insensitive( header_upgrade, "websocket" ) )
     {
         respond( 400, "Bad Request", output );
-        return e_status::error;
+        return error;
     }
 
     // verify |Connection| header field contains upgrade
-    std::string header_connetion = header[ "Connection" ];
+    const std::string header_connetion = header[ "Connection" ];
 
     if ( !string_contains_case_insensitive( header_connetion, "upgrade" ) )
     {
         respond( 400, "Bad Request", output );
-        return e_status::error;
+        return error;
     }
 
     // verify |Sec-WebSocket-Version| header field is set to supported websocket version
-    std::string version = header[ "Sec-WebSocket-Version" ];
+    const std::string version = header[ "Sec-WebSocket-Version" ];
 
     if ( std::strcmp( version.c_str(), "13" ) != 0 )
     {
         respond( 426, "Upgrade Required", output );
-        return e_status::error;
+        return error;
     }
 
     // [optional] verify |Origin| header field matches
@@ -485,15 +489,15 @@ c_ws_handshake::server( const char *host, const char *origin, c_byte_stream *inp
         if ( header.find( "Origin" ) == header.end() )
         {
             respond( 400, "Bad Request", output );
-            return e_status::error;
+            return error;
         }
 
-        std::string header_origin = header[ "Origin" ];
+        const std::string header_origin = header[ "Origin" ];
 
         if ( !string_contains_case_insensitive( header_origin, host ) )
         {
             respond( 403, "Forbidden", output );
-            return e_status::error;
+            return error;
         }
     }
 
@@ -513,13 +517,13 @@ c_ws_handshake::server( const char *host, const char *origin, c_byte_stream *inp
     */
 
     // generate |Sec-WebSocket-Accept| out of |Sec-WebSocket-Key|
-    std::string secret = header[ "Sec-WebSocket-Key" ];
+    const std::string secret = header[ "Sec-WebSocket-Key" ];
     std::string accept;
 
-    if ( c_ws_handshake::secret( secret, accept ) != e_status::ok )
+    if ( c_ws_handshake::secret( secret, accept ) != ok )
     {
         respond( 500, "Internal Server Error", output );
-        return e_status::error;
+        return error;
     }
 
     ( *output ) << "HTTP/1.1 101 Switching Protocols\r\n";
@@ -528,5 +532,5 @@ c_ws_handshake::server( const char *host, const char *origin, c_byte_stream *inp
     ( *output ) << "Sec-WebSocket-Accept: " << accept.c_str() << "\r\n";
     ( *output ) << "\r\n";
 
-    return e_status::ok;
+    return ok;
 }

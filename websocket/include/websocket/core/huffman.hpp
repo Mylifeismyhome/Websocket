@@ -17,7 +17,7 @@ public:
     encode( const std::vector< unsigned char > &input, std::vector< unsigned char > &output, size_t &bit_count, std::map< unsigned char, size_t > &frequency_table );
 
     static e_status
-    decode( const std::vector< unsigned char > &input, std::vector< unsigned char > &output, size_t bit_count, std::map< unsigned char, size_t > frequency_table );
+    decode( const std::vector< unsigned char > &input, std::vector< unsigned char > &output, size_t bit_count, const std::map< unsigned char, size_t >& frequency_table );
 
     c_huffman();
 

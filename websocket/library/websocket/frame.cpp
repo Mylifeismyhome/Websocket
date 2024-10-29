@@ -64,7 +64,7 @@ static_assert( sizeof( ws_frame_byte2_t ) == sizeof( unsigned char ), "ws_frame_
 struct c_ws_frame::impl_t
 {
     e_ws_frame_opcode opcode;
-    unsigned char key[ 4 ];
+    unsigned char key[ 4 ]{};
     c_byte_stream payload;
 
     bool
@@ -259,12 +259,12 @@ c_ws_frame::impl_t::encode( e_ws_frame_opcode opcode, bool mask, unsigned char *
     {
         c_byte_stream fragment;
 
-        ws_frame_byte1_t byte1;
+        ws_frame_byte1_t byte1{};
 
         byte1.bits.fin = ( size <= CHUNK_SIZE );
-        byte1.bits.rsv1 = 0x0; // < extension, used to indicate compression
-        byte1.bits.rsv2 = 0x0; // < not in use yet.
-        byte1.bits.rsv3 = 0x0; // < not in use yet.
+        byte1.bits.rsv1 = false; // < extension, used to indicate compression
+        byte1.bits.rsv2 = false; // < not in use yet.
+        byte1.bits.rsv3 = false; // < not in use yet.
         byte1.bits.opcode = ( offset == 0 ? opcode : e_ws_frame_opcode::opcode_continuation );
 
         if ( fragment.push_back( byte1.value ) != c_byte_stream::e_status::ok )
@@ -272,7 +272,7 @@ c_ws_frame::impl_t::encode( e_ws_frame_opcode opcode, bool mask, unsigned char *
             return e_ws_frame_status::status_error;
         }
 
-        ws_frame_byte2_t byte2;
+        ws_frame_byte2_t byte2{};
 
         byte2.bits.mask = mask;
 
@@ -387,7 +387,7 @@ c_ws_frame::impl_t::decode( c_byte_stream *input, c_byte_stream *output, e_ws_fr
         return e_ws_frame_status::status_incomplete;
     }
 
-    ws_frame_byte1_t byte1 = { *input->pointer() };
+    const ws_frame_byte1_t byte1 = { *input->pointer() };
 
     // RFC 7692
     // todo: support rsv1 permessage-deflate compression
@@ -401,37 +401,40 @@ c_ws_frame::impl_t::decode( c_byte_stream *input, c_byte_stream *output, e_ws_fr
     switch ( byte1.bits.opcode )
     {
         case e_ws_frame_opcode::opcode_continuation:
+        {
             if ( byte1.bits.fin )
             {
                 return e_ws_frame_status::status_error;
             }
             break;
+        }
 
         case e_ws_frame_opcode::opcode_text:
         case e_ws_frame_opcode::opcode_binary:
         case e_ws_frame_opcode::opcode_close:
         case e_ws_frame_opcode::opcode_ping:
         case e_ws_frame_opcode::opcode_pong:
+        {
             opcode = byte1.bits.opcode;
             break;
+        }
 
-        // further planned non controll
-        case e_ws_frame_opcode::opcode_rsv1_further_non_controll:
-        case e_ws_frame_opcode::opcode_rsv2_further_non_controll:
-        case e_ws_frame_opcode::opcode_rsv3_further_non_controll:
-        case e_ws_frame_opcode::opcode_rsv4_further_non_controll:
-        case e_ws_frame_opcode::opcode_rsv5_further_non_controll:
+        // further planned non control
+        case e_ws_frame_opcode::opcode_rsv1_further_non_control:
+        case e_ws_frame_opcode::opcode_rsv2_further_non_control:
+        case e_ws_frame_opcode::opcode_rsv3_further_non_control:
+        case e_ws_frame_opcode::opcode_rsv4_further_non_control:
+        case e_ws_frame_opcode::opcode_rsv5_further_non_control:
+        // further planned control
+        case e_ws_frame_opcode::opcode_rsv1_further_control:
+        case e_ws_frame_opcode::opcode_rsv2_further_control:
+        case e_ws_frame_opcode::opcode_rsv3_further_control:
+        case e_ws_frame_opcode::opcode_rsv4_further_control:
+        case e_ws_frame_opcode::opcode_rsv5_further_control:
+        {
             // those opcodes are reserved and are not being used yet.
             return e_ws_frame_status::status_error;
-
-        // further planned controll
-        case e_ws_frame_opcode::opcode_rsv1_further_controll:
-        case e_ws_frame_opcode::opcode_rsv2_further_controll:
-        case e_ws_frame_opcode::opcode_rsv3_further_controll:
-        case e_ws_frame_opcode::opcode_rsv4_further_controll:
-        case e_ws_frame_opcode::opcode_rsv5_further_controll:
-            // those opcodes are reserved and are not being used yet.
-            return e_ws_frame_status::status_error;
+        }
     }
 
     if ( input->size() < 2 )
@@ -439,7 +442,7 @@ c_ws_frame::impl_t::decode( c_byte_stream *input, c_byte_stream *output, e_ws_fr
         return e_ws_frame_status::status_incomplete;
     }
 
-    ws_frame_byte2_t byte2 = { *input->pointer( 1 ) };
+    const ws_frame_byte2_t byte2 = { *input->pointer( 1 ) };
 
     size_t payload_length = byte2.bits.payload_length;
     size_t offset = 2;

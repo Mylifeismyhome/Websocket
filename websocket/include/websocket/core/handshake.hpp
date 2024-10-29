@@ -48,7 +48,7 @@ public:
     random( size_t count, std::string &output );
 
     static e_status
-    secret( std::string input, std::string &output );
+    secret( const std::string& input, std::string &output );
 
     static e_status
     create( const char *host, const char *origin, const char *channel, c_byte_stream *output, std::string &out_accept_key );

@@ -34,16 +34,16 @@ void *
 websocket_create()
 {
     void *ptr = std::malloc( sizeof( c_websocket ) );
-    if ( ptr == NULL )
+    if ( ptr == nullptr )
     {
-        return NULL;
+        return nullptr;
     }
 
     return new ( ptr ) c_websocket();
 }
 
 e_ws_status
-websocket_setup( void *ctx, ws_settings_t *settings )
+websocket_setup( void *ctx, const ws_settings_t *settings )
 {
     if ( !ctx )
     {
@@ -58,10 +58,10 @@ websocket_bind( void *ctx, const char *bind_ip, const char *bind_port, int *out_
 {
     if ( !ctx )
     {
-        return e_ws_status::status_error;
+        return status_error;
     }
 
-    return reinterpret_cast< c_websocket * >( ctx )->bind( bind_ip, bind_port, out_fd );
+    return static_cast< c_websocket * >( ctx )->bind( bind_ip, bind_port, out_fd );
 }
 
 e_ws_status
@@ -69,10 +69,10 @@ websocket_open( void *ctx, const char *host_ip, const char *host_port, int *out_
 {
     if ( !ctx )
     {
-        return e_ws_status::status_error;
+        return status_error;
     }
 
-    return reinterpret_cast< c_websocket * >( ctx )->open( host_ip, host_port, out_fd );
+    return static_cast< c_websocket * >( ctx )->open( host_ip, host_port, out_fd );
 }
 
 e_ws_status
@@ -83,7 +83,7 @@ websocket_on( void *ctx, const char *event_name, void *callback )
         return e_ws_status::status_error;
     }
 
-    return reinterpret_cast< c_websocket * >( ctx )->on( event_name, callback );
+    return static_cast< c_websocket * >( ctx )->on( event_name, callback );
 }
 
 bool
@@ -94,7 +94,7 @@ websocket_operate( void *ctx )
         return false;
     }
 
-    return reinterpret_cast< c_websocket * >( ctx )->operate();
+    return static_cast< c_websocket * >( ctx )->operate();
 }
 
 void
@@ -105,7 +105,7 @@ websocket_destroy( void *ctx )
         return;
     }
 
-    reinterpret_cast< c_websocket * >( ctx )->~c_websocket();
+    static_cast< c_websocket * >( ctx )->~c_websocket();
 
     std::free( ctx );
 }
@@ -114,9 +114,9 @@ void *
 websocket_frame_create( e_ws_frame_opcode opcode )
 {
     void *ptr = std::malloc( sizeof( c_ws_frame ) );
-    if ( ptr == NULL )
+    if ( ptr == nullptr )
     {
-        return NULL;
+        return nullptr;
     }
 
     return new ( ptr ) c_ws_frame( opcode );
@@ -130,7 +130,7 @@ websocket_frame_mask( void *ctx, const int key )
         return;
     }
 
-    reinterpret_cast< c_ws_frame * >( ctx )->mask( key );
+    static_cast< c_ws_frame * >( ctx )->mask( key );
 }
 
 bool
@@ -141,7 +141,7 @@ websocket_frame_push( void *ctx, unsigned char *data, size_t size )
         return false;
     }
 
-    return reinterpret_cast< c_ws_frame * >( ctx )->push( data, size );
+    return static_cast< c_ws_frame * >( ctx )->push( data, size );
 }
 
 bool
@@ -152,7 +152,7 @@ websocket_frame_push_string( void *ctx, const char *data )
         return false;
     }
 
-    return reinterpret_cast< c_ws_frame * >( ctx )->push( data );
+    return static_cast< c_ws_frame * >( ctx )->push( data );
 }
 
 void
@@ -163,18 +163,18 @@ websocket_frame_flush( void *ctx )
         return;
     }
 
-    reinterpret_cast< c_ws_frame * >( ctx )->flush();
+    static_cast< c_ws_frame * >( ctx )->flush();
 }
 
 bool
-websocket_frame_emit( void *ctx, int fd, void *frame )
+websocket_frame_emit( void *ctx, const int fd, void *frame )
 {
     if ( !ctx || !frame )
     {
         return false;
     }
 
-    return reinterpret_cast< c_websocket * >( ctx )->emit( fd, reinterpret_cast< c_ws_frame * >( frame ) );
+    return static_cast< c_websocket * >( ctx )->emit( fd, static_cast< c_ws_frame * >( frame ) );
 }
 
 void
@@ -185,20 +185,20 @@ websocket_frame_destroy( void *ctx )
         return;
     }
 
-    reinterpret_cast< c_ws_frame * >( ctx )->~c_ws_frame();
+    static_cast< c_ws_frame * >( ctx )->~c_ws_frame();
 
     std::free( ctx );
 }
 
 void
-websocket_close( void *ctx, int fd )
+websocket_close( void *ctx, const int fd )
 {
     if ( !ctx )
     {
         return;
     }
 
-    reinterpret_cast< c_websocket * >( ctx )->close( fd );
+    static_cast< c_websocket * >( ctx )->close( fd );
 }
 
 #endif

@@ -20,7 +20,7 @@
 static ws_settings_t settings;
 
 #ifdef WEBSOCKET_EXAMPLE_C_API
-static void *ctx = NULL;
+static void *ctx = nullptr;
 #else
 static c_websocket ws;
 #endif
@@ -77,11 +77,11 @@ exit_handler( int signal_num )
 
 #ifdef WEBSOCKET_EXAMPLE_C_API
 void
-websocket_on_open( void *ctx, int fd, const char *addr )
+websocket_on_open( void *ctx, const int fd, const char *addr )
 {
     printf( "new connection `%i;%s`\n", fd, addr );
 
-    void *frame = websocket_frame_create( e_ws_frame_opcode::opcode_text );
+    void *frame = websocket_frame_create( opcode_text );
     websocket_frame_mask( frame, 123 );
     websocket_frame_push_string( frame, "hello world!" );
     websocket_frame_emit( ctx, fd, frame );
@@ -89,15 +89,15 @@ websocket_on_open( void *ctx, int fd, const char *addr )
 }
 
 void
-websocket_on_close( void *ctx, int fd, e_ws_closure_status status )
+websocket_on_close( void *ctx, const int fd, const e_ws_closure_status status )
 {
     printf( "connection dropped `%i` with status `%i`\n", fd, status );
 }
 
 void
-websocket_on_frame( void *ctx, int fd, e_ws_frame_opcode opcode, unsigned char *payload, size_t size )
+websocket_on_frame( void *ctx, const int fd, const e_ws_frame_opcode opcode, const unsigned char *payload, const size_t size )
 {
-    printf( "income frame `%i` :: opcode -> %d\n\t%s\n", fd, opcode, payload );
+    printf( "income frame `%i` :: opcode -> %d\n\t%s\n", fd, opcode, reinterpret_cast< const char * >( payload ) );
 }
 
 void
@@ -107,11 +107,11 @@ websocket_on_error( void *ctx, const char *message )
 }
 #else
 void
-websocket_on_open( void *ctx, int fd, const char *addr )
+websocket_on_open( void *ctx, const int fd, const char *addr )
 {
     printf( "new connection `%i;%s`\n", fd, addr );
 
-    c_websocket *ws = reinterpret_cast< c_websocket * >( ctx );
+    auto *ws = static_cast< c_websocket * >( ctx );
 
     c_ws_frame frame( e_ws_frame_opcode::opcode_text );
     frame.mask( 123 );
@@ -120,15 +120,15 @@ websocket_on_open( void *ctx, int fd, const char *addr )
 }
 
 void
-websocket_on_close( void *ctx, int fd, e_ws_closure_status status )
+websocket_on_close( void *ctx, const int fd, const e_ws_closure_status status )
 {
     printf( "connection dropped `%i` with status `%i`\n", fd, status );
 }
 
 void
-websocket_on_frame( void *ctx, int fd, e_ws_frame_opcode opcode, unsigned char *payload, size_t size )
+websocket_on_frame( void *ctx, const int fd, const e_ws_frame_opcode opcode, const unsigned char *payload, const size_t size )
 {
-    printf( "income frame `%i` :: opcode -> %d\n\t%s\n", fd, opcode, payload );
+    printf( "income frame `%i` :: opcode -> %d\n\t%s\n", fd, opcode, reinterpret_cast< const char * >( payload ) );
 }
 
 void
@@ -153,9 +153,9 @@ main()
     ws_settings_init( &settings );
 
 #ifdef WEBSOCKET_EXAMPLE_ENDPOINT_SERVER
-    settings.endpoint = e_ws_endpoint_type::endpoint_server;
+    settings.endpoint = endpoint_server;
 #elif WEBSOCKET_EXAMPLE_ENDPOINT_CLIENT
-    settings.endpoint = e_ws_endpoint_type::endpoint_client;
+    settings.endpoint = endpoint_client;
 #endif
 
     settings.host = strdup( "localhost:4433" );
@@ -163,40 +163,40 @@ main()
 #ifdef WEBSOCKET_EXAMPLE_C_API
     ctx = websocket_create();
 
-    if ( ctx == NULL )
+    if ( ctx == nullptr )
     {
         return 1;
     }
 
-    if ( websocket_on( ctx, WS_EVENT_OPEN, reinterpret_cast< void * >( websocket_on_open ) ) == e_ws_status::status_error )
-    {
-        websocket_destroy( ctx );
-        ws_settings_destroy( &settings );
-        return 1;
-    }
-
-    if ( websocket_on( ctx, WS_EVENT_CLOSE, reinterpret_cast< void * >( websocket_on_close ) ) == e_ws_status::status_error )
+    if ( websocket_on( ctx, WS_EVENT_OPEN, reinterpret_cast< void * >( websocket_on_open ) ) == status_error )
     {
         websocket_destroy( ctx );
         ws_settings_destroy( &settings );
         return 1;
     }
 
-    if ( websocket_on( ctx, WS_EVENT_FRAME, reinterpret_cast< void * >( websocket_on_frame ) ) == e_ws_status::status_error )
+    if ( websocket_on( ctx, WS_EVENT_CLOSE, reinterpret_cast< void * >( websocket_on_close ) ) == status_error )
     {
         websocket_destroy( ctx );
         ws_settings_destroy( &settings );
         return 1;
     }
 
-    if ( websocket_on( ctx, WS_EVENT_ERROR, reinterpret_cast< void * >( websocket_on_error ) ) == e_ws_status::status_error )
+    if ( websocket_on( ctx, WS_EVENT_FRAME, reinterpret_cast< void * >( websocket_on_frame ) ) == status_error )
     {
         websocket_destroy( ctx );
         ws_settings_destroy( &settings );
         return 1;
     }
 
-    if ( websocket_setup( ctx, &settings ) == e_ws_status::status_error )
+    if ( websocket_on( ctx, WS_EVENT_ERROR, reinterpret_cast< void * >( websocket_on_error ) ) == status_error )
+    {
+        websocket_destroy( ctx );
+        ws_settings_destroy( &settings );
+        return 1;
+    }
+
+    if ( websocket_setup( ctx, &settings ) == status_error )
     {
         websocket_destroy( ctx );
         ws_settings_destroy( &settings );
@@ -204,14 +204,14 @@ main()
     }
 
 #ifdef WEBSOCKET_EXAMPLE_ENDPOINT_SERVER
-    if ( websocket_bind( ctx, "localhost", "4433", NULL ) == e_ws_status::status_error )
+    if ( websocket_bind( ctx, "localhost", "4433", nullptr ) == status_error )
     {
         websocket_destroy( ctx );
         ws_settings_destroy( &settings );
         return 1;
     }
 #elif WEBSOCKET_EXAMPLE_ENDPOINT_CLIENT
-    if ( websocket_open( ctx, "localhost", "4433", NULL ) == e_ws_status::status_error )
+    if ( websocket_open( ctx, "localhost", "4433", nullptr ) == status_error )
     {
         websocket_destroy( ctx );
         ws_settings_destroy( &settings );
@@ -228,25 +228,25 @@ main()
 
     websocket_destroy( ctx );
 #else
-    if ( ws.on( WS_EVENT_OPEN, reinterpret_cast< void * >( websocket_on_open ) ) == e_ws_status::status_error )
+    if ( ws.on( WS_EVENT_OPEN, reinterpret_cast< void * >( websocket_on_open ) ) == status_error )
     {
         ws_settings_destroy( &settings );
         return 1;
     }
 
-    if ( ws.on( WS_EVENT_CLOSE, reinterpret_cast< void * >( websocket_on_close ) ) == e_ws_status::status_error )
+    if ( ws.on( WS_EVENT_CLOSE, reinterpret_cast< void * >( websocket_on_close ) ) == status_error )
     {
         ws_settings_destroy( &settings );
         return 1;
     }
 
-    if ( ws.on( WS_EVENT_FRAME, reinterpret_cast< void * >( websocket_on_frame ) ) == e_ws_status::status_error )
+    if ( ws.on( WS_EVENT_FRAME, reinterpret_cast< void * >( websocket_on_frame ) ) == status_error )
     {
         ws_settings_destroy( &settings );
         return 1;
     }
 
-    if ( ws.on( WS_EVENT_ERROR, reinterpret_cast< void * >( websocket_on_error ) ) == e_ws_status::status_error )
+    if ( ws.on( WS_EVENT_ERROR, reinterpret_cast< void * >( websocket_on_error ) ) == status_error )
     {
         ws_settings_destroy( &settings );
         return 1;

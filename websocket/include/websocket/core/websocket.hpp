@@ -239,7 +239,7 @@ public:
      *         - `e_ws_status::status_error` if there was an issue with the provided settings.
      */
     e_ws_status
-    setup( ws_settings_t *settings );
+    setup( const ws_settings_t *settings ) const;
 
     /**
      * @brief Binds a file descriptor to the specified IP address and port.
@@ -257,7 +257,7 @@ public:
      *         - `e_ws_status::status_error` on failure.
      */
     e_ws_status
-    bind( const char *bind_ip, const char *bind_port, int *out_fd );
+    bind( const char *bind_ip, const char *bind_port, int *out_fd ) const;
 
     /**
      * @brief Binds a file descriptor to the specified port.
@@ -274,7 +274,7 @@ public:
      *         - `e_ws_status::status_error` on failure.
      */
     e_ws_status
-    bind( const char *bind_port, int *out_fd );
+    bind( const char *bind_port, int *out_fd ) const;
 
     /**
      * @brief Opens a file descriptor to the specified host and port.
@@ -292,7 +292,7 @@ public:
      *         - `e_ws_status::status_error` on failure.
      */
     e_ws_status
-    open( const char *host_name, const char *host_port, int *out_fd );
+    open( const char *host_name, const char *host_port, int *out_fd ) const;
 
     /**
      * @brief Closes the specified file descriptor or all open file descriptors.

@@ -18,19 +18,19 @@ enum e_ws_frame_opcode : unsigned char
     opcode_continuation = 0x0,
     opcode_text = 0x1,
     opcode_binary = 0x2,
-    opcode_rsv1_further_non_controll = 0x3,
-    opcode_rsv2_further_non_controll = 0x4,
-    opcode_rsv3_further_non_controll = 0x5,
-    opcode_rsv4_further_non_controll = 0x6,
-    opcode_rsv5_further_non_controll = 0x7,
+    opcode_rsv1_further_non_control = 0x3,
+    opcode_rsv2_further_non_control = 0x4,
+    opcode_rsv3_further_non_control = 0x5,
+    opcode_rsv4_further_non_control = 0x6,
+    opcode_rsv5_further_non_control = 0x7,
     opcode_close = 0x8,
     opcode_ping = 0x9,
     opcode_pong = 0xA,
-    opcode_rsv1_further_controll = 0xB,
-    opcode_rsv2_further_controll = 0xC,
-    opcode_rsv3_further_controll = 0xD,
-    opcode_rsv4_further_controll = 0xE,
-    opcode_rsv5_further_controll = 0xF
+    opcode_rsv1_further_control = 0xB,
+    opcode_rsv2_further_control = 0xC,
+    opcode_rsv3_further_control = 0xD,
+    opcode_rsv4_further_control = 0xE,
+    opcode_rsv5_further_control = 0xF
 };
 
 #ifdef __cplusplus

@@ -10,7 +10,7 @@ c_lzss::compress( const std::vector< unsigned char > &input, std::vector< unsign
     const size_t input_size = input.size();
     if ( input_size == 0 )
     {
-        return e_status::status_ok;
+        return e_status::status_error;
     }
 
     std::vector< unsigned char > window;

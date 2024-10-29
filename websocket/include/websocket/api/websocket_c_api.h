@@ -39,7 +39,7 @@ WEBSOCKET_API void *
 websocket_create();
 
 WEBSOCKET_API e_ws_status
-websocket_setup( void *ctx, ws_settings_t *settings );
+websocket_setup( void *ctx, const ws_settings_t *settings );
 
 WEBSOCKET_API e_ws_status
 websocket_bind( void *ctx, const char *bind_ip, const char *bind_port, int *out_fd );

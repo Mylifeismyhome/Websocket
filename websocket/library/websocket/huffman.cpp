@@ -33,20 +33,18 @@ struct c_huffman::impl_t
     huffman_build_bits_table( Node *root, std::map< unsigned char, std::vector< bool > > &huffman_bits );
 
     static void
-    huffman_release_tree( Node *node );
+    huffman_release_tree( const Node *node );
 };
 
 void
 c_huffman::impl_t::huffman_build_frequency_table( const std::vector< unsigned char > &input, std::map< unsigned char, size_t > &frequency )
 {
-    for ( size_t i = 0; i < input.size(); ++i )
+    for (unsigned char character : input)
     {
-        unsigned char character = input.at( i );
-
-        std::map< unsigned char, size_t >::iterator it = frequency.find( character );
+        auto it = frequency.find( character );
         if ( it == frequency.end() )
         {
-            frequency.emplace( std::make_pair( character, 1 ) );
+            frequency.emplace( character, 1 );
             continue;
         }
 
@@ -59,9 +57,9 @@ c_huffman::impl_t::huffman_build_tree( const std::map< unsigned char, size_t > &
 {
     std::priority_queue< Node *, std::vector< Node * >, Compare > min_heap;
 
-    for ( std::map< unsigned char, size_t >::const_iterator it = frequency.begin(); it != frequency.end(); ++it )
+    for ( const auto it : frequency)
     {
-        min_heap.emplace( new Node( it->first, it->second ) );
+        min_heap.emplace( new Node( it.first, it.second ) );
     }
 
     while ( min_heap.size() > 1 )
@@ -91,12 +89,12 @@ c_huffman::impl_t::huffman_build_bits_table( Node *root, std::map< unsigned char
     }
 
     std::stack< std::pair< Node *, std::vector< bool > > > stack;
-    stack.push( std::make_pair( root, std::vector< bool >() ) );
+    stack.emplace( root, std::vector< bool >() );
 
     while ( !stack.empty() )
     {
         Node *node = stack.top().first;
-        std::vector< bool > bits = stack.top().second;
+        const std::vector< bool > bits = stack.top().second;
         stack.pop();
 
         if ( !node->left && !node->right )
@@ -108,14 +106,14 @@ c_huffman::impl_t::huffman_build_bits_table( Node *root, std::map< unsigned char
         {
             std::vector< bool > right_bits = bits;
             right_bits.push_back( true );
-            stack.push( { node->right, right_bits } );
+            stack.emplace( node->right, right_bits );
         }
 
         if ( node->left )
         {
             std::vector< bool > left_bits = bits;
             left_bits.push_back( false );
-            stack.push( { node->left, left_bits } );
+            stack.emplace( node->left, left_bits );
         }
     }
 
@@ -123,7 +121,7 @@ c_huffman::impl_t::huffman_build_bits_table( Node *root, std::map< unsigned char
 }
 
 void
-c_huffman::impl_t::huffman_release_tree( Node *node )
+c_huffman::impl_t::huffman_release_tree( const Node *node )
 {
     if ( node == nullptr )
     {
@@ -153,11 +151,9 @@ c_huffman::encode( const std::vector< unsigned char > &input, std::vector< unsig
         return e_status::status_error;
     }
 
-    for ( size_t i = 0; i < input.size(); ++i )
+    for (unsigned char character : input)
     {
-        unsigned char character = input[ i ];
-
-        std::map< unsigned char, std::vector< bool > >::iterator it = bits_table.find( character );
+        auto it = bits_table.find( character );
         if ( it == bits_table.end() )
         {
             c_huffman::impl_t::huffman_release_tree( root );
@@ -175,7 +171,7 @@ c_huffman::encode( const std::vector< unsigned char > &input, std::vector< unsig
     {
         unsigned char character = input[ i ];
 
-        std::map< unsigned char, std::vector< bool > >::iterator it = bits_table.find( character );
+        auto it = bits_table.find( character );
         if ( it == bits_table.end() )
         {
             c_huffman::impl_t::huffman_release_tree( root );
@@ -204,7 +200,7 @@ c_huffman::encode( const std::vector< unsigned char > &input, std::vector< unsig
 }
 
 c_huffman::e_status
-c_huffman::decode( const std::vector< unsigned char > &input, std::vector< unsigned char > &output, size_t bit_count, std::map< unsigned char, size_t > frequency_table )
+c_huffman::decode( const std::vector< unsigned char > &input, std::vector< unsigned char > &output, size_t bit_count, const std::map< unsigned char, size_t >& frequency_table )
 {
     c_huffman::impl_t::Node *root = c_huffman::impl_t::huffman_build_tree( frequency_table );
     if ( !root )
