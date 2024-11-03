@@ -3,10 +3,10 @@
 #include <queue>
 #include <stack>
 
-#define EOB '\0'
-
 struct c_huffman::impl_t
 {
+    static constexpr short EOB = 0x100;
+
     struct Node
     {
         unsigned char character;
@@ -37,6 +37,8 @@ struct c_huffman::impl_t
     static void
     huffman_release_tree( const Node *node );
 };
+
+constexpr short c_huffman::impl_t::EOB;
 
 void
 c_huffman::impl_t::huffman_build_frequency_table( const std::vector< unsigned char > &input, std::map< unsigned char, size_t > &frequency )
@@ -271,7 +273,7 @@ c_huffman::decode( const std::vector< unsigned char > &input, std::vector< unsig
         {
             if ( !node->left && !node->right )
             {
-                if ( node->character == EOB )
+                if ( node->character == impl_t::EOB )
                 {
                     break;
                 }
@@ -312,7 +314,7 @@ c_huffman::decode( const std::vector< unsigned char > &input, std::vector< unsig
         {
             if ( !node->left && !node->right )
             {
-                if ( node->character == EOB )
+                if ( node->character == impl_t::EOB )
                 {
                     break;
                 }
