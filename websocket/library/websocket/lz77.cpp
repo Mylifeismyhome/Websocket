@@ -1,41 +1,5 @@
 #include <websocket/core/lz77.h>
 
-struct Match
-{
-    short distance;
-    unsigned char length;
-};
-
-static Match
-find_longest_match( const std::vector< unsigned char > &input, size_t pos, size_t window_size )
-{
-    short best_distance = 0;
-    unsigned char best_length = 0;
-
-    size_t start = ( pos >= window_size ) ? ( pos - window_size ) : 0;
-
-    for ( size_t j = start; j < pos; ++j )
-    {
-        size_t length = 0;
-
-        // Compare characters in the search window with the current position
-        while ( pos + length < input.size() && input[ j + length ] == input[ pos + length ] )
-        {
-            ++length;
-            if ( length >= 255 )
-                break; // Limit the length to 255 for byte storage
-        }
-
-        if ( length > best_length )
-        {
-            best_distance = pos - j;
-            best_length = length;
-        }
-    }
-
-    return { best_distance, best_length };
-}
-
 c_lz77::e_status
 c_lz77::compress( const std::vector< unsigned char > &input, std::vector< unsigned char > &output, const size_t window_size )
 {
@@ -45,25 +9,43 @@ c_lz77::compress( const std::vector< unsigned char > &input, std::vector< unsign
 
     for ( size_t i = 0, j = 0; i < input.size(); i += j )
     {
-        // Step 1: Find the longest match in the window
-        const Match match = find_longest_match( input, i, window_size );
+        // search for the longest match
+        size_t best_distance = 0;
+        size_t best_length = 0;
 
-        // Step 2: Store the (distance, length, next_char) in the output
-        if ( match.length > 0 )
+        const size_t start = i >= window_size ? i - window_size : 0;
+
+        for ( size_t z = start; z < i; ++z )
         {
-            // Encode as (distance, length, next_char) triple
-            output[ output_length++ ] = match.distance;
-            output[ output_length++ ] = match.length;
-            output[ output_length++ ] = input[ i + match.length ]; // next unmatched character
+            size_t length = 0;
 
-            j = match.length + 1;
+            // compare in the search window
+            while ( i + length < input.size() && input[ z + length ] == input[ i + length ] )
+            {
+                ++length;
+            }
+
+            if ( length > best_length )
+            {
+                best_distance = i - z;
+                best_length = length;
+            }
+        }
+
+        // write (distance, length, literal) to output
+        if ( best_length > 0 )
+        {
+            output[ output_length++ ] = best_distance;
+            output[ output_length++ ] = best_length;
+            output[ output_length++ ] = input[ i + best_length ];
+
+            j = best_length + 1;
         }
         else
         {
-            // No match found, encode as (0, 0, current_char)
-            output[ output_length++ ] = 0; // distance
-            output[ output_length++ ] = 0; // length
-            output[ output_length++ ] = input[ i ]; // current character
+            output[ output_length++ ] = 0;
+            output[ output_length++ ] = 0;
+            output[ output_length++ ] = input[ i ];
 
             j = 1;
         }
