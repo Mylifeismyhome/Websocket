@@ -8,7 +8,7 @@
 
 #include <websocket/core/endian.h>
 #include <websocket/core/huffman.h>
-#include <websocket/core/lzss.h>
+#include <websocket/core/lz77.h>
 
 #include <cstring>
 #include <map>

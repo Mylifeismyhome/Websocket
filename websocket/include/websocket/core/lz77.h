@@ -4,7 +4,7 @@
 #include <vector>
 
 /**
- * @class c_lzss
+ * @class c_lz77
  * @brief Implements the LZSS (Lempel-Ziv-Storer-Szymanski) compression algorithm.
  *
  * This class provides static methods to compress and decompress data using the LZSS algorithm.
@@ -12,7 +12,7 @@
  * references to previous occurrences within a sliding window. It is particularly efficient for
  * compressing data with repeated patterns.
  */
-class c_lzss
+class c_lz77
 {
 public:
     /**
@@ -52,12 +52,11 @@ public:
      *
      * @param input The input buffer containing compressed data.
      * @param output The output buffer where decompressed data will be stored.
-     * @param maxout The maximum number of bytes that can be written to the output buffer.
      * @return `e_status::status_ok` if decompression was successful; otherwise, `e_status::status_error`.
      *
      * @note Ensure that the output buffer has enough capacity to store up to `maxout` bytes
      *       of decompressed data. If the buffer is too small, decompressed data may be truncated.
      */
     static e_status
-    decompress(const std::vector<unsigned char> &input, std::vector<unsigned char> &output, size_t maxout);
+    decompress(const std::vector<unsigned char> &input, std::vector<unsigned char> &output);
 };

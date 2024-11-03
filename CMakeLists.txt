@@ -119,7 +119,7 @@ set(API
 )
 
 set(CORE
-	websocket/library/websocket/lzss.cpp
+	websocket/library/websocket/lz77.cpp
 	websocket/library/websocket/huffman.cpp
 	websocket/library/websocket/flate.cpp
     websocket/library/websocket/byte_stream.cpp
