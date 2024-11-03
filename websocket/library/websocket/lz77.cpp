@@ -59,39 +59,54 @@ c_lz77::compress( const std::vector< unsigned char > &input, std::vector< unsign
 c_lz77::e_status
 c_lz77::decompress( const std::vector< unsigned char > &input, std::vector< unsigned char > &output )
 {
-    size_t i = 0;
+    size_t output_length = 0;
 
-    while ( i < input.size() )
+    for ( size_t i = 0, j = 0; i < input.size(); i += j )
     {
-        if ( i + 2 >= input.size() )
+        if ( i + 3 > input.size() )
         {
-            // Incomplete triple, so we can't proceed
             return e_status::status_error;
         }
 
-        // Read (distance, length, next_char) triple
-        unsigned char distance = input[ i ];
-        unsigned char length = input[ i + 1 ];
-        unsigned char next_char = input[ i + 2 ];
-        i += 3;
+        const unsigned char distance = input[ i ];
+        const unsigned char length = input[ i + 1 ];
 
         if ( distance > 0 && length > 0 )
         {
-            // Copy `length` bytes from `distance` back in the output
-            size_t copy_start = output.size() - distance;
-            for ( size_t j = 0; j < length; ++j )
+            output_length += length;
+        }
+
+        output_length++;
+
+        j = 3;
+    }
+
+    output.resize( output_length );
+
+    for ( size_t i = 0, j = 0, k = 0; i < input.size(); i += j )
+    {
+        if ( i + 3 > input.size() )
+        {
+            return e_status::status_error;
+        }
+
+        const unsigned char distance = input[ i ];
+        const unsigned char length = input[ i + 1 ];
+        const unsigned char literal = input[ i + 2 ];
+
+        if ( distance > 0 && length > 0 )
+        {
+            const size_t start = k - distance;
+
+            for ( size_t z = 0; z < length; ++z )
             {
-                if ( copy_start + j >= output.size() )
-                {
-                    // Ensure within bounds
-                    return e_status::status_error;
-                }
-                output.push_back( output[ copy_start + j ] );
+                output[ k++ ] = output[ start + z ];
             }
         }
 
-        // Add `next_char` to the output, whether or not a match was found
-        output.push_back( next_char );
+        output[ k++ ] = literal;
+
+        j = 3;
     }
 
     return e_status::status_ok;
