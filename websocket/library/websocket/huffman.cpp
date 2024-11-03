@@ -3,6 +3,8 @@
 #include <queue>
 #include <stack>
 
+#define EOB '\0'
+
 struct c_huffman::impl_t
 {
     struct Node
@@ -30,7 +32,7 @@ struct c_huffman::impl_t
     huffman_build_tree( const std::map< unsigned char, size_t > &frequency );
 
     static e_status
-    huffman_build_bits_table( Node *root, std::map< unsigned char, std::vector< bool > > &huffman_bits );
+    huffman_build_code_table( Node *root, std::map< unsigned char, std::vector< bool > > &huffman_bits );
 
     static void
     huffman_release_tree( const Node *node );
@@ -50,6 +52,8 @@ c_huffman::impl_t::huffman_build_frequency_table( const std::vector< unsigned ch
 
         it->second++;
     }
+
+    frequency.emplace( EOB, 1 );
 }
 
 c_huffman::impl_t::Node *
@@ -81,7 +85,7 @@ c_huffman::impl_t::huffman_build_tree( const std::map< unsigned char, size_t > &
 }
 
 c_huffman::e_status
-c_huffman::impl_t::huffman_build_bits_table( Node *root, std::map< unsigned char, std::vector< bool > > &huffman_bits )
+c_huffman::impl_t::huffman_build_code_table( Node *root, std::map< unsigned char, std::vector< bool > > &huffman_bits )
 {
     if ( !root )
     {
@@ -128,11 +132,34 @@ c_huffman::impl_t::huffman_release_tree( const Node *node )
         return;
     }
 
-    huffman_release_tree( node->left );
-    huffman_release_tree( node->right );
+    std::stack< const Node * > node_stack;
+    std::vector< const Node * > node_order;
 
-    delete node;
+    node_stack.push( node );
+
+    while ( !node_stack.empty() )
+    {
+        const Node *current = node_stack.top();
+        node_stack.pop();
+
+        node_order.push_back( current );
+
+        if ( current->left )
+        {
+            node_stack.push( current->left );
+        }
+        if ( current->right )
+        {
+            node_stack.push( current->right );
+        }
+    }
+
+    for ( auto it = node_order.rbegin(); it != node_order.rend(); ++it )
+    {
+        delete *it;
+    }
 }
+
 
 c_huffman::e_status
 c_huffman::encode( const std::vector< unsigned char > &input, std::vector< unsigned char > &output, std::map< unsigned char, size_t > &frequency_table )
@@ -140,14 +167,18 @@ c_huffman::encode( const std::vector< unsigned char > &input, std::vector< unsig
     impl_t::huffman_build_frequency_table( input, frequency_table );
 
     impl_t::Node *root = impl_t::huffman_build_tree( frequency_table );
+
     if ( !root )
     {
         return e_status::status_error;
     }
 
-    std::map< unsigned char, std::vector< bool > > bits_table;
-    if ( impl_t::huffman_build_bits_table( root, bits_table ) != e_status::status_ok )
+    std::map< unsigned char, std::vector< bool > > code_table;
+
+    if ( impl_t::huffman_build_code_table( root, code_table ) != e_status::status_ok )
     {
+        impl_t::huffman_release_tree( root );
+
         return e_status::status_error;
     }
 
@@ -155,36 +186,43 @@ c_huffman::encode( const std::vector< unsigned char > &input, std::vector< unsig
 
     for ( unsigned char character : input )
     {
-        auto it = bits_table.find( character );
-        if ( it == bits_table.end() )
+        auto it = code_table.find( character );
+
+        if ( it == code_table.end() )
         {
             impl_t::huffman_release_tree( root );
+
             return e_status::status_error;
         }
 
-        std::vector< bool > bits = bits_table[ character ];
+        std::vector< bool > bits = code_table[ character ];
 
         output_length += bits.size();
     }
 
     output.resize( ( output_length + 7 ) / 8 );
 
-    for ( size_t i = 0, bit_index = 0; i < input.size(); ++i )
-    {
-        unsigned char character = input[ i ];
+    std::fill( output.begin(), output.end(), 0 );
 
-        auto it = bits_table.find( character );
-        if ( it == bits_table.end() )
+    size_t bit_index = 0;
+
+    for ( unsigned char character : input )
+    {
+        auto it = code_table.find( character );
+
+        if ( it == code_table.end() )
         {
             impl_t::huffman_release_tree( root );
+
             return e_status::status_error;
         }
 
-        std::vector< bool > bits = bits_table[ character ];
+        std::vector< bool > code = code_table[ character ];
 
-        for ( const bool bit : bits )
+        for ( const bool bit : code )
         {
             const size_t byte_index = bit_index / 8;
+
             const size_t bit_position = 7 - bit_index % 8;
 
             if ( bit )
@@ -196,9 +234,6 @@ c_huffman::encode( const std::vector< unsigned char > &input, std::vector< unsig
         }
     }
 
-    // eob
-    output.push_back( 0x1000 );
-
     impl_t::huffman_release_tree( root );
 
     return e_status::status_ok;
@@ -208,72 +243,90 @@ c_huffman::e_status
 c_huffman::decode( const std::vector< unsigned char > &input, std::vector< unsigned char > &output, const std::map< unsigned char, size_t > &frequency_table )
 {
     const impl_t::Node *root = impl_t::huffman_build_tree( frequency_table );
+
     if ( !root )
     {
         return e_status::status_error;
     }
 
+    const size_t bits = input.size() * 8;
+
     const impl_t::Node *node = root;
 
     size_t output_length = 0;
 
-    for ( size_t bits = 0; bits < input.size() * 8; ++bits )
+    for ( size_t i = 0; i < bits; ++i )
     {
-        const size_t byte_index = bits / 8;
-        const size_t bit_position = 7 - bits % 8;
-        const unsigned char value = input[ byte_index ];
+        const size_t byte_index = i / 8;
 
-        // eob
-        if ( value == 0x1000 )
-        {
-            break;
-        }
+        const size_t bit_position = 7 - i % 8;
+
+        const unsigned char value = input[ byte_index ];
 
         const bool bit = value >> bit_position & 1;
 
         node = bit ? node->right : node->left;
 
-        if ( !node )
+        if ( node )
+        {
+            if ( !node->left && !node->right )
+            {
+                if ( node->character == EOB )
+                {
+                    break;
+                }
+
+                output_length++;
+
+                node = root;
+            }
+        }
+        else
         {
             impl_t::huffman_release_tree( root );
-            return e_status::status_error;
-        }
 
-        if ( !node->left && !node->right )
-        {
-            output_length++;
-            node = root;
+            return e_status::status_error;
         }
     }
 
     output.resize( output_length );
 
-    for ( size_t bits = 0, i = 0; bits < input.size() * 8; ++bits )
-    {
-        const size_t byte_index = bits / 8;
-        const size_t bit_position = 7 - bits % 8;
-        const unsigned char value = input[ byte_index ];
+    std::fill( output.begin(), output.end(), 0 );
 
-        // eob
-        if ( value == 0x1000 )
-        {
-            break;
-        }
+    node = root;
+
+    size_t output_index = 0;
+    for ( size_t i = 0; i < bits; ++i )
+    {
+        const size_t byte_index = i / 8;
+
+        const size_t bit_position = 7 - i % 8;
+
+        const unsigned char value = input[ byte_index ];
 
         const bool bit = value >> bit_position & 1;
 
         node = bit ? node->right : node->left;
 
-        if ( !node )
+        if ( node )
+        {
+            if ( !node->left && !node->right )
+            {
+                if ( node->character == EOB )
+                {
+                    break;
+                }
+
+                output[ output_index++ ] = node->character;
+
+                node = root;
+            }
+        }
+        else
         {
             impl_t::huffman_release_tree( root );
-            return e_status::status_error;
-        }
 
-        if ( !node->left && !node->right )
-        {
-            output[ i++ ] = node->character;
-            node = root;
+            return e_status::status_error;
         }
     }
 

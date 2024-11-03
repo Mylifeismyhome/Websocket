@@ -61,37 +61,37 @@ c_endian::network_to_host_64( const unsigned long long value )
 }
 
 unsigned short
-c_endian::little_endian_16( unsigned short value )
+c_endian::little_endian_16( const unsigned short value )
 {
     return is_big() ? swap_16( value ) : value;
 }
 
 unsigned int
-c_endian::little_endian_32( unsigned int value )
+c_endian::little_endian_32( const unsigned int value )
 {
     return is_big() ? swap_32( value ) : value;
 }
 
 unsigned long long
-c_endian::little_endian_64( unsigned long long value )
+c_endian::little_endian_64( const unsigned long long value )
 {
     return is_big() ? swap_64( value ) : value;
 }
 
 unsigned short
-c_endian::big_endian_16( unsigned short value )
+c_endian::big_endian_16( const unsigned short value )
 {
     return is_big() ? swap_64( value ) : value;
 }
 
 unsigned int
-c_endian::big_endian_32( unsigned int value )
+c_endian::big_endian_32( const unsigned int value )
 {
     return is_little() ? swap_32( value ) : value;
 }
 
 unsigned long long
-c_endian::big_endian_64( unsigned long long value )
+c_endian::big_endian_64( const unsigned long long value )
 {
     return is_little() ? swap_64( value ) : value;
 }
