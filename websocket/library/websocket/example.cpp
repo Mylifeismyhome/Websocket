@@ -4,6 +4,7 @@
 
 #include <csignal>
 #include <cstdio>
+#include <cstring>
 
 #ifdef WEBSOCKET_EXAMPLE_C_API
 #ifndef WEBSOCKET_C_API
