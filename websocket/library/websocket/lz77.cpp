@@ -2,6 +2,8 @@
 
 #include <unordered_map>
 
+static constexpr size_t hash_length = 3;
+
 c_lz77::e_status
 c_lz77::compress( const std::vector< unsigned char > &input, std::vector< unsigned char > &output, const size_t window_size )
 {
@@ -18,7 +20,6 @@ c_lz77::compress( const std::vector< unsigned char > &input, std::vector< unsign
 
     // hash table for speeding up window search
     std::unordered_map< size_t, std::vector< size_t > > hash_table;
-    constexpr size_t hash_length = 3;
 
     // rolling hash function
     auto hash_function = [ & ]( const size_t pos ) -> size_t
@@ -69,16 +70,26 @@ c_lz77::compress( const std::vector< unsigned char > &input, std::vector< unsign
         // write (distance, length, literal) to output
         if ( best_length > 0 )
         {
+            // write 8 bits
             output[ output_length++ ] = best_distance;
+
+            // write 8 bits
             output[ output_length++ ] = best_length;
+
+            // write 8 bits
             output[ output_length++ ] = input[ i + best_length ];
 
             j = best_length + 1;
         }
         else
         {
+            // write 8 bits
             output[ output_length++ ] = 0;
+
+            // write 8 bits
             output[ output_length++ ] = 0;
+
+            // write 8 bits
             output[ output_length++ ] = input[ i ];
 
             j = 1;
@@ -122,7 +133,7 @@ c_lz77::decompress( const std::vector< unsigned char > &input, std::vector< unsi
             return e_status::status_error;
         }
 
-        const unsigned char distance = input[ i ];
+        const unsigned short distance = input[ i ];
         const unsigned char length = input[ i + 1 ];
 
         if ( distance > 0 && length > 0 )
@@ -135,7 +146,14 @@ c_lz77::decompress( const std::vector< unsigned char > &input, std::vector< unsi
         j = 3;
     }
 
-    output.resize( output_length );
+    try
+    {
+        output.resize( output_length );
+    }
+    catch ( ... )
+    {
+        return e_status::status_error;
+    }
 
     for ( size_t i = 0, j = 0, k = 0; i < input.size(); i += j )
     {
@@ -144,7 +162,7 @@ c_lz77::decompress( const std::vector< unsigned char > &input, std::vector< unsi
             return e_status::status_error;
         }
 
-        const unsigned char distance = input[ i ];
+        const unsigned short distance = input[ i ];
         const unsigned char length = input[ i + 1 ];
         const unsigned char literal = input[ i + 2 ];
 
