@@ -202,7 +202,16 @@ c_huffman::encode( const std::vector< unsigned char > &input, std::vector< unsig
         output_length += bits.size();
     }
 
-    output.resize( ( output_length + 7 ) / 8 );
+    try
+    {
+        output.resize( ( output_length + 7 ) / 8 );
+    }
+    catch ( ... )
+    {
+        impl_t::huffman_release_tree( root );
+
+        return e_status::status_error;
+    }
 
     std::fill( output.begin(), output.end(), 0 );
 
@@ -291,7 +300,16 @@ c_huffman::decode( const std::vector< unsigned char > &input, std::vector< unsig
         }
     }
 
-    output.resize( output_length );
+    try
+    {
+        output.resize( output_length );
+    }
+    catch ( ... )
+    {
+        impl_t::huffman_release_tree( root );
+
+        return e_status::status_error;
+    }
 
     std::fill( output.begin(), output.end(), 0 );
 
