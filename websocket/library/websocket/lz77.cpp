@@ -9,7 +9,7 @@ c_lz77::compress( const std::vector< unsigned char > &input, std::vector< unsign
 {
     try
     {
-        output.resize( input.size() );
+        output.resize( input.size() * 2 );
     }
     catch ( ... )
     {
@@ -43,6 +43,7 @@ c_lz77::compress( const std::vector< unsigned char > &input, std::vector< unsign
         {
             // lookup positions with the same hash in the sliding window
             const size_t start = i >= window_size ? i - window_size : 0;
+
             auto it = hash_table.find( current_hash );
 
             if ( it != hash_table.end() )
@@ -50,9 +51,12 @@ c_lz77::compress( const std::vector< unsigned char > &input, std::vector< unsign
                 for ( const size_t pos : it->second )
                 {
                     if ( pos < start )
+                    {
                         continue;
+                    }
 
                     size_t length = 0;
+
                     while ( i + length < input.size() && input[ pos + length ] == input[ i + length ] )
                     {
                         ++length;
@@ -99,12 +103,21 @@ c_lz77::compress( const std::vector< unsigned char > &input, std::vector< unsign
         if ( i + hash_length <= input.size() )
         {
             size_t new_hash = hash_function( i );
-            hash_table[ new_hash ].push_back( i );
 
-            // keep hash table within the sliding window
-            if ( hash_table[ new_hash ].size() > window_size )
+            auto it = hash_table.find( new_hash );
+            if ( it == hash_table.end() )
             {
-                hash_table[ new_hash ].erase( hash_table[ new_hash ].begin() );
+                hash_table.insert( std::make_pair( new_hash, std::vector< size_t >( 1, i ) ) );
+            }
+            else
+            {
+                it->second.emplace_back( i );
+
+                // keep hash table within the sliding window
+                if ( it->second.size() > window_size )
+                {
+                    it->second.erase( it->second.begin() );
+                }
             }
         }
     }
