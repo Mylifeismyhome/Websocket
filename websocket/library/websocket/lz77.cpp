@@ -1,34 +1,68 @@
 #include <websocket/core/lz77.h>
 
+#include <unordered_map>
+
 c_lz77::e_status
 c_lz77::compress( const std::vector< unsigned char > &input, std::vector< unsigned char > &output, const size_t window_size )
 {
-    output.resize( input.size() );
+    try
+    {
+        output.resize( input.size() );
+    }
+    catch ( ... )
+    {
+        return e_status::status_error;
+    }
 
     size_t output_length = 0;
 
+    // hash table for speeding up window search
+    std::unordered_map< size_t, std::vector< size_t > > hash_table;
+    constexpr size_t hash_length = 3;
+
+    // rolling hash function
+    auto hash_function = [ & ]( const size_t pos ) -> size_t
+    {
+        if ( pos + hash_length > input.size() )
+        {
+            return 0;
+        }
+
+        return input[ pos ] << 16 | input[ pos + 1 ] << 8 | input[ pos + 2 ];
+    };
+
     for ( size_t i = 0, j = 0; i < input.size(); i += j )
     {
-        // search for the longest match
         size_t best_distance = 0;
         size_t best_length = 0;
 
-        const size_t start = i >= window_size ? i - window_size : 0;
+        size_t current_hash = hash_function( i );
 
-        for ( size_t z = start; z < i; ++z )
+        if ( i >= hash_length )
         {
-            size_t length = 0;
+            // lookup positions with the same hash in the sliding window
+            const size_t start = i >= window_size ? i - window_size : 0;
+            auto it = hash_table.find( current_hash );
 
-            // compare in the search window
-            while ( i + length < input.size() && input[ z + length ] == input[ i + length ] )
+            if ( it != hash_table.end() )
             {
-                ++length;
-            }
+                for ( const size_t pos : it->second )
+                {
+                    if ( pos < start )
+                        continue;
 
-            if ( length > best_length )
-            {
-                best_distance = i - z;
-                best_length = length;
+                    size_t length = 0;
+                    while ( i + length < input.size() && input[ pos + length ] == input[ i + length ] )
+                    {
+                        ++length;
+                    }
+
+                    if ( length > best_length )
+                    {
+                        best_distance = i - pos;
+                        best_length = length;
+                    }
+                }
             }
         }
 
@@ -49,9 +83,29 @@ c_lz77::compress( const std::vector< unsigned char > &input, std::vector< unsign
 
             j = 1;
         }
+
+        // update hash table
+        if ( i + hash_length <= input.size() )
+        {
+            size_t new_hash = hash_function( i );
+            hash_table[ new_hash ].push_back( i );
+
+            // keep hash table within the sliding window
+            if ( hash_table[ new_hash ].size() > window_size )
+            {
+                hash_table[ new_hash ].erase( hash_table[ new_hash ].begin() );
+            }
+        }
     }
 
-    output.resize( output_length );
+    try
+    {
+        output.resize( output_length );
+    }
+    catch ( ... )
+    {
+        return e_status::status_error;
+    }
 
     return e_status::status_ok;
 }
