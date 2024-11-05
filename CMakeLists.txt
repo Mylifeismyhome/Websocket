@@ -118,6 +118,21 @@ set(API
 	websocket/library/websocket/websocket_c_api.cpp
 )
 
+set(ZLIB
+	websocket/library/websocket/gzclose.c
+	websocket/library/websocket/gzlib.c
+	websocket/library/websocket/gzread.c
+	websocket/library/websocket/gzwrite.c
+	websocket/library/websocket/adler32.c
+	websocket/library/websocket/crc32.c
+	websocket/library/websocket/trees.c
+	websocket/library/websocket/inftrees.c
+	websocket/library/websocket/inffast.c
+	websocket/library/websocket/zutil.c
+	websocket/library/websocket/deflate.c
+	websocket/library/websocket/inflate.c
+)
+
 set(CORE
 	websocket/library/websocket/lz77.cpp
 	websocket/library/websocket/huffman.cpp
@@ -134,6 +149,7 @@ set(SOURCES
 )
 
 source_group("mbedtls" FILES ${MBEDTLS})
+source_group("zlib" FILES ${ZLIB})
 source_group("websocket" FILES ${CORE} ${API} ${SOURCES})
 
 option(ENABLE_C_API "enable c api" ON)
@@ -144,7 +160,7 @@ option(BUILD_EXAMPLE "build example" ON)
 option(EXAMPLE_C_API "use c api in example build" OFF)
 
 if(BUILD_SHARED)
-	add_library(LIB_SHARED SHARED ${MBEDTLS} ${API} ${CORE})
+	add_library(LIB_SHARED SHARED ${MBEDTLS} ${API} ${ZLIB} ${CORE})
 	
 	target_compile_definitions(LIB_SHARED PRIVATE WEBSOCKET_SHARED WEBSOCKET_EXPORT)
 	
@@ -162,7 +178,7 @@ if(BUILD_SHARED)
 endif()
 
 if(BUILD_STATIC)
-	add_library(LIB_STATIC STATIC ${MBEDTLS} ${API} ${CORE})
+	add_library(LIB_STATIC STATIC ${MBEDTLS} ${API} ${ZLIB} ${CORE})
 
 	if(ENABLE_CPP_API)
 		target_compile_definitions(LIB_STATIC PRIVATE WEBSOCKET_CPP_API)
@@ -178,11 +194,11 @@ if(BUILD_STATIC)
 endif()
 
 if(BUILD_EXAMPLE)
-	add_executable(EXAMPLE_CLIENT ${MBEDTLS} ${API} ${CORE} ${SOURCES})
+	add_executable(EXAMPLE_CLIENT ${MBEDTLS} ${API} ${ZLIB} ${CORE} ${SOURCES})
 	
 	target_compile_definitions(EXAMPLE_CLIENT PRIVATE WEBSOCKET_EXAMPLE_ENDPOINT_CLIENT)
 	
-	add_executable(EXAMPLE_SERVER ${MBEDTLS} ${API} ${CORE} ${SOURCES})
+	add_executable(EXAMPLE_SERVER ${MBEDTLS} ${API} ${ZLIB} ${CORE} ${SOURCES})
 	
 	target_compile_definitions(EXAMPLE_SERVER PRIVATE WEBSOCKET_EXAMPLE_ENDPOINT_SERVER)
 	

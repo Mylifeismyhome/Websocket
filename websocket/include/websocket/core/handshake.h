@@ -55,6 +55,6 @@ public:
     client( const char *accept_key, const c_byte_stream *input, c_byte_stream *output );
 
     static e_status
-    server( const char *host, const char *origin, const c_byte_stream *input, c_byte_stream *output );
+    server( const char *host, const char *origin, const c_byte_stream *input, c_byte_stream *output, bool& ext_permessage_deflate, size_t& ext_permessage_deflate_window_size );
 };
 /** \endcond */

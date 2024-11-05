@@ -48,14 +48,14 @@ c_huffman::impl_t::huffman_build_frequency_table( const std::vector< unsigned ch
         auto it = frequency.find( character );
         if ( it == frequency.end() )
         {
-            frequency.emplace( character, 1 );
+            frequency.emplace( std::make_pair( character, 1 ) );
             continue;
         }
 
         it->second++;
     }
 
-    frequency.emplace( EOB, 1 );
+    frequency.emplace( std::make_pair( static_cast< unsigned char >( EOB ), 1 ) );
 }
 
 c_huffman::impl_t::Node *

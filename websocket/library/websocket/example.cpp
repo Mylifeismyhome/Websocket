@@ -5,6 +5,7 @@
 #include <csignal>
 #include <cstdio>
 #include <cstring>
+#include <vector>
 
 #ifdef WEBSOCKET_EXAMPLE_C_API
 #ifndef WEBSOCKET_C_API

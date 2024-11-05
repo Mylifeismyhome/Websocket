@@ -162,6 +162,12 @@ c_byte_stream::operator=( c_byte_stream &&other ) noexcept
         return *this;
     }
 
+    if ( impl )
+    {
+        delete impl;
+        impl = nullptr;
+    }
+
     impl = other.impl;
     other.impl = nullptr;
 
@@ -1074,6 +1080,13 @@ c_byte_stream::size() const
 {
     return impl->container.size();
 }
+
+std::vector< unsigned char > *
+c_byte_stream::container() const
+{
+    return &impl->container;
+}
+
 
 bool
 c_byte_stream::available() const

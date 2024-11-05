@@ -25,6 +25,7 @@ SOFTWARE.
 #pragma once
 
 #include <cstddef>
+#include <vector>
 
 /** \cond */
 class c_byte_stream final
@@ -39,10 +40,10 @@ public:
         out_of_bound /**< Operation attempted to access out-of-bound memory. */
     };
 
-#if defined(_WIN64) || defined(__x86_64__) || defined(__ppc64__)
+#if defined( _WIN64 ) || defined( __x86_64__ ) || defined( __ppc64__ )
     static constexpr size_t npos = ~0LLU; /**< Represents an invalid index for 64-bit systems. */
 #else
-    static constexpr size_t npos = ~0U;   /**< Represents an invalid index for 32-bit systems. */
+    static constexpr size_t npos = ~0U; /**< Represents an invalid index for 32-bit systems. */
 #endif
 
     c_byte_stream();
@@ -57,7 +58,8 @@ public:
     c_byte_stream &
     operator=( c_byte_stream &&other ) noexcept;
 
-    ~c_byte_stream();
+    ~
+    c_byte_stream();
 
     c_byte_stream &
     operator<<( unsigned char value );
@@ -181,6 +183,9 @@ public:
 
     size_t
     size() const;
+
+    std::vector< unsigned char >*
+    container() const;
 
     bool
     available() const;

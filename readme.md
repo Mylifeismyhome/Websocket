@@ -9,11 +9,13 @@ The library is designed to facilitate secure and unsecured WebSocket connections
 - **Secure and Unsecured WebSocket Connections**: Supports secure WebSocket (WSS) using mbedTLS, as well as standard unsecured WebSocket (WS) connections.
 - **CMake Build System**: Simplifies building and integrating the library with CMake.
 
+## Supported Extensions
+
+- **permessage-deflate**: Supports the permessage-deflate extension for message compression over WebSocket connections, enhancing efficiency and performance.
+
 ## Limitations
 
-- **RSV1 Flag**: Compression (e.g., permessage-deflate) is not yet supported but will be added in the future.
-- **Sec-WebSocket-Protocol**: Not currently handled.
-- **Sec-WebSocket-Extension**: Not currently handled.
+- **Sec-WebSocket-Protocol**: Not handled.
 
 ## Requirements
 

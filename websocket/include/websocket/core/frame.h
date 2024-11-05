@@ -70,9 +70,11 @@ class WEBSOCKET_API c_ws_frame final
 public:
     c_ws_frame();
 
-    explicit c_ws_frame( e_ws_frame_opcode opcode );
+    explicit
+    c_ws_frame( e_ws_frame_opcode opcode );
 
-    ~c_ws_frame();
+    ~
+    c_ws_frame();
 
     c_ws_frame( const c_ws_frame &other );
 
@@ -93,6 +95,9 @@ public:
      */
     void
     mask( unsigned int key ) const;
+
+    void
+    deflate( size_t window_size ) const;
 
     /**
      * @brief Appends data to the WebSocket frame payload.

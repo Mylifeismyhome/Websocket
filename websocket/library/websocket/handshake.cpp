@@ -278,6 +278,7 @@ c_ws_handshake::create( const char *host, const char *origin, const char *channe
     request << "Connection: Upgrade\r\n";
     request << "Sec-WebSocket-Key: " << b64 << "\r\n";
     request << "Sec-WebSocket-Version: 13\r\n";
+    request << "Sec-WebSocket-Extensions: permessage-deflate\r\n";
 
     if ( origin )
     {
@@ -386,7 +387,7 @@ c_ws_handshake::client( const char *accept_key, const c_byte_stream *input, c_by
 }
 
 c_ws_handshake::e_status
-c_ws_handshake::server( const char *host, const char *origin, const c_byte_stream *input, c_byte_stream *output )
+c_ws_handshake::server( const char *host, const char *origin, const c_byte_stream *input, c_byte_stream *output, bool& ext_permessage_deflate, size_t& ext_permessage_deflate_window_size )
 {
     if ( !output )
     {
@@ -515,6 +516,16 @@ c_ws_handshake::server( const char *host, const char *origin, const c_byte_strea
         to speak.  The interpretation of this header field is discussed
         in Section 9.1.
     */
+    bool is_ext_permessage_deflate = false;
+
+    if ( header.find( "Sec-WebSocket-Extensions" ) != header.end() )
+    {
+        const std::string extensions = header[ "Sec-WebSocket-Extensions" ];
+        if ( extensions.find( "permessage-deflate" ) != std::string::npos )
+        {
+            is_ext_permessage_deflate = true;
+        }
+    }
 
     // generate |Sec-WebSocket-Accept| out of |Sec-WebSocket-Key|
     const std::string secret = header[ "Sec-WebSocket-Key" ];
@@ -530,7 +541,16 @@ c_ws_handshake::server( const char *host, const char *origin, const c_byte_strea
     *output << "Upgrade: websocket\r\n";
     *output << "Connection: Upgrade\r\n";
     *output << "Sec-WebSocket-Accept: " << accept.c_str() << "\r\n";
+
+    if ( is_ext_permessage_deflate )
+    {
+        *output << "Sec-WebSocket-Extensions: permessage-deflate\r\n";
+    }
+
     *output << "\r\n";
+
+    ext_permessage_deflate = is_ext_permessage_deflate;
+    ext_permessage_deflate_window_size = 15;
 
     return ok;
 }

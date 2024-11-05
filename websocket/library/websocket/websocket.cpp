@@ -152,6 +152,9 @@ struct file_descriptor_context
 
     e_ws_closure_status closure_status; /**< closure reason for file descriptor. */
 
+    bool ex_permessage_deflate;
+    size_t ex_permessage_deflate_window_size;
+
     file_descriptor_context();
 
     ~
@@ -458,6 +461,9 @@ file_descriptor_context()
     mbedtls_timing_set_delay( &timer_ping_pong_ctx, 0, 0 );
 
     closure_status = closure_no_status_received;
+
+    ex_permessage_deflate = false;
+    ex_permessage_deflate_window_size = 0;
 }
 
 file_descriptor_context::~
@@ -777,7 +783,7 @@ c_websocket::impl_t::communicate( file_descriptor_context *ctx )
                                 switch ( endpoint )
                                 {
                                     case endpoint_server:
-                                        status_handshake = c_ws_handshake::server( host.c_str(), allowed_origin.c_str(), &ctx->stream.input, &ctx->stream.output );
+                                        status_handshake = c_ws_handshake::server( host.c_str(), allowed_origin.c_str(), &ctx->stream.input, &ctx->stream.output, ctx->ex_permessage_deflate, ctx->ex_permessage_deflate_window_size );
                                         break;
 
                                     case endpoint_client:
@@ -1393,6 +1399,11 @@ c_websocket::emit( const int fd, const c_ws_frame *frame ) const
     if ( ctx->ws_con_state == e_ws_con_state::opening || ctx->ws_con_state == e_ws_con_state::closed )
     {
         return status_error;
+    }
+
+    if(ctx->ex_permessage_deflate)
+    {
+        frame->deflate( ctx->ex_permessage_deflate_window_size );
     }
 
     if ( frame->write( &ctx->stream.output ) != e_ws_frame_status::status_ok )
