@@ -1,21 +1,17 @@
-cmake_minimum_required(VERSION 3.15)  # minimum cmake version required
-project(websocket VERSION 1.0)  # project name and version
+cmake_minimum_required(VERSION 3.0)
+project(websocket VERSION 1.0)
 
-# set c++ standard
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-implicit-function-declaration")
 
-# define configuration types
 set(CMAKE_CONFIGURATION_TYPES "debug;release" CACHE STRING "Configurations" FORCE)
 
-# specify output directories for the build
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
-# include directories
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/mbedtls/include
 	${CMAKE_CURRENT_SOURCE_DIR}/websocket/include
