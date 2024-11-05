@@ -5,9 +5,7 @@ project(websocket VERSION 1.0)  # project name and version
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-# for gcc and clang
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-implicit-function-declaration")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-implicit-function-declaration")
 
 # define configuration types
 set(CMAKE_CONFIGURATION_TYPES "debug;release" CACHE STRING "Configurations" FORCE)
