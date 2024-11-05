@@ -1,19 +1,23 @@
-cmake_minimum_required(VERSION 3.15)  # Minimum CMake version required
-project(websocket VERSION 1.0)  # Project name and version
+cmake_minimum_required(VERSION 3.15)  # minimum cmake version required
+project(websocket VERSION 1.0)  # project name and version
 
-# Set C++ standard
+# set c++ standard
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
+
+# for gcc and clang
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-implicit-function-declaration")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-implicit-function-declaration")
 
 # define configuration types
 set(CMAKE_CONFIGURATION_TYPES "debug;release" CACHE STRING "Configurations" FORCE)
 
-# Specify output directories for the build
+# specify output directories for the build
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
-# Include directories
+# include directories
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/mbedtls/include
 	${CMAKE_CURRENT_SOURCE_DIR}/websocket/include
@@ -134,7 +138,7 @@ set(ZLIB
 )
 
 set(CORE
-        websocket/library/websocket/flate.cpp
+    websocket/library/websocket/flate.cpp
     websocket/library/websocket/byte_stream.cpp
 	websocket/library/websocket/endian.cpp
 	websocket/library/websocket/handshake.cpp
