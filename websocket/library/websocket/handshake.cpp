@@ -159,7 +159,7 @@ c_ws_handshake::respond( const int status_code, const char *message, c_byte_stre
 c_ws_handshake::e_status
 c_ws_handshake::random( const size_t count, std::string &output )
 {
-    constexpr auto pers = "websocket_handshake_random";
+    constexpr auto pers = "097290aafe141434bd15eace820031b16f40a4677979a386919bad2ba57f1547";
 
     auto *block = static_cast< unsigned char * >( malloc( sizeof( unsigned char ) * count ) );
 

@@ -84,7 +84,6 @@ websocket_on_open( void *ctx, const int fd, const char *addr )
     printf( "new connection `%i;%s`\n", fd, addr );
 
     void *frame = websocket_frame_create( opcode_text );
-    websocket_frame_mask( frame, 123 );
     websocket_frame_push_string( frame, "hello world!" );
     websocket_frame_emit( ctx, fd, frame );
     websocket_frame_destroy( frame );
@@ -113,10 +112,9 @@ websocket_on_open( void *ctx, const int fd, const char *addr )
 {
     printf( "new connection `%i;%s`\n", fd, addr );
 
-    auto *ws = static_cast< c_websocket * >( ctx );
+    const auto *ws = static_cast< c_websocket * >( ctx );
 
-    c_ws_frame frame( e_ws_frame_opcode::opcode_text );
-    frame.mask( 123 );
+    c_ws_frame frame( opcode_text );
     frame.push( "hello world!" );
     ws->emit( fd, &frame );
 }
@@ -154,15 +152,17 @@ main()
 
     ws_settings_init( &settings );
 
-    settings.extensions.permessage_deflate.enabled = true;
-
 #ifdef WEBSOCKET_EXAMPLE_ENDPOINT_SERVER
     settings.endpoint = endpoint_server;
+    settings.auto_mask_frame = false;
 #elif WEBSOCKET_EXAMPLE_ENDPOINT_CLIENT
     settings.endpoint = endpoint_client;
+    settings.auto_mask_frame = true;
 #endif
 
     settings.host = strdup( "localhost:4433" );
+
+    settings.extensions.permessage_deflate.enabled = true;
 
 #ifdef WEBSOCKET_EXAMPLE_C_API
     ctx = websocket_create();

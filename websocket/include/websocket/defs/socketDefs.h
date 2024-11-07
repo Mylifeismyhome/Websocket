@@ -139,6 +139,8 @@ typedef struct
 
     size_t message_limit; /**< @brief Message limit in bytes. (default 4mb) */
 
+    bool auto_mask_frame; /** @brief Enable/Disable automatic frame masking with random generated secret. (default enabled) */
+
     ws_extensions_t extensions; /** @brief configurable Websocket extensions */
 } ws_settings_t;
 
@@ -182,6 +184,8 @@ void inline ws_settings_init( ws_settings_t *settings )
     settings->ping_timeout = 30 * 1000;
 
     settings->message_limit = 4 * 1024 * 1024; // 4mb in bytes
+
+    settings->auto_mask_frame = true;
 
     settings->extensions.permessage_deflate.enabled = false;
     settings->extensions.permessage_deflate.window_bits = 15;

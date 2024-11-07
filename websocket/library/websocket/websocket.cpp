@@ -35,6 +35,7 @@ SOFTWARE.
 #include <map>
 #include <memory>
 #include <mutex>
+#include <random>
 #include <sstream>
 #include <string>
 #include <thread>
@@ -51,6 +52,49 @@ SOFTWARE.
 #ifdef MBEDTLS_SSL_CACHE_C
 #include <mbedtls/ssl_cache.h>
 #endif
+
+static FORCE_INLINE int
+gen_rnd_int()
+{
+    constexpr auto pers = "a6aa177d5f45d14c7cbbca646160ff79537620b1503e681fd08f88589b26fee1";
+
+    unsigned char block[ 4 ];
+
+    mbedtls_entropy_context entropy;
+    mbedtls_ctr_drbg_context ctr_drbg;
+
+    mbedtls_entropy_init( &entropy );
+    mbedtls_ctr_drbg_init( &ctr_drbg );
+
+    if ( mbedtls_ctr_drbg_seed( &ctr_drbg, mbedtls_entropy_func, &entropy, reinterpret_cast< const unsigned char * >( pers ), strlen( pers ) ) != 0 )
+    {
+        mbedtls_ctr_drbg_free( &ctr_drbg );
+        mbedtls_entropy_free( &entropy );
+
+        // fallback
+        std::random_device rd;
+        std::mt19937 mt( rd() );
+        std::uniform_int_distribution<> dist( std::numeric_limits< int >::min(), std::numeric_limits< int >::max() );
+        return dist( mt );
+    }
+
+    if ( mbedtls_ctr_drbg_random( &ctr_drbg, block, 4 ) != 0 )
+    {
+        mbedtls_ctr_drbg_free( &ctr_drbg );
+        mbedtls_entropy_free( &entropy );
+
+        // fallback
+        std::random_device rd;
+        std::mt19937 mt( rd() );
+        std::uniform_int_distribution<> dist( std::numeric_limits< int >::min(), std::numeric_limits< int >::max() );
+        return dist( mt );
+    }
+
+    mbedtls_ctr_drbg_free( &ctr_drbg );
+    mbedtls_entropy_free( &entropy );
+
+    return block[ 0 ] << 24 | block[ 1 ] << 16 | block[ 2 ] << 8 | block[ 3 ];
+}
 
 struct ssl_t
 {
@@ -201,6 +245,8 @@ struct c_websocket::impl_t
 
     size_t message_limit;
 
+    bool auto_mask_frame;
+
     bool
     try_lock() const;
 
@@ -275,6 +321,8 @@ impl_t()
     ping_timeout = 30 * 1000;
 
     message_limit = 4 * 1024 * 1024; // 4 mb in bytes
+
+    auto_mask_frame = true;
 
     extensions.permessage_deflate.enabled = false;
     extensions.permessage_deflate.window_bits = 15;
@@ -607,6 +655,8 @@ c_websocket::impl_t::setup( const ws_settings_t *settings )
     ping_timeout = settings->ping_timeout;
 
     message_limit = settings->message_limit;
+
+    auto_mask_frame = settings->auto_mask_frame;
 
     extensions = settings->extensions;
 
@@ -1410,6 +1460,11 @@ c_websocket::emit( const int fd, const c_ws_frame *frame ) const
     if ( ctx->ws_con_state == e_ws_con_state::opening || ctx->ws_con_state == e_ws_con_state::closed )
     {
         return status_error;
+    }
+
+    if ( impl->auto_mask_frame )
+    {
+        frame->mask( gen_rnd_int() );
     }
 
     if ( ctx->extensions.permessage_deflate.enabled )
