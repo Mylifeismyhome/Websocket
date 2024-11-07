@@ -79,6 +79,35 @@ enum e_ws_closure_status : int
 };
 
 /**
+ * @brief WebSocket extensions configuration structure.
+ *
+ * This structure holds configuration parameters for WebSocket extensions.
+ */
+typedef struct
+{
+    /**
+     * @brief Configuration for the "permessage-deflate" extension.
+     */
+    struct
+    {
+        /**
+         * @brief Flag indicating if the permessage-deflate extension is enabled.
+         *
+         * Set to `true` if the extension is enabled, otherwise `false`.
+         */
+        bool enabled;
+
+        /**
+         * @brief Window size bits for the permessage-deflate extension.
+         *
+         * Specifies the window size, where higher values allow for larger
+         * compression windows and better compression ratios but require more memory.
+         */
+        unsigned char window_bits;
+    } permessage_deflate;
+} ws_extensions_t;
+
+/**
  * @struct ws_settings_t
  * @brief WebSocket settings
  *
@@ -109,6 +138,8 @@ typedef struct
     unsigned int ping_timeout; /**< @brief Timeout in milliseconds to wait for a pong message after sending a ping. */
 
     size_t message_limit; /**< @brief Message limit in bytes. (default 4mb) */
+
+    ws_extensions_t extensions; /** @brief configurable Websocket extensions */
 } ws_settings_t;
 
 /**
@@ -151,6 +182,9 @@ void inline ws_settings_init( ws_settings_t *settings )
     settings->ping_timeout = 30 * 1000;
 
     settings->message_limit = 4 * 1024 * 1024; // 4mb in bytes
+
+    settings->extensions.permessage_deflate.enabled = false;
+    settings->extensions.permessage_deflate.window_bits = 15;
 }
 
 /**

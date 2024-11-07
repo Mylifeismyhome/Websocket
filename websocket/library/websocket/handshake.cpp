@@ -237,7 +237,7 @@ c_ws_handshake::secret( const std::string &input, std::string &output )
 }
 
 c_ws_handshake::e_status
-c_ws_handshake::create( const char *host, const char *origin, const char *channel, const c_byte_stream *output, std::string &out_accept_key )
+c_ws_handshake::create( const char *host, const char *origin, const char *channel, c_byte_stream *output, std::string &out_accept_key, const ws_extensions_t *extensions )
 {
     if ( !output )
     {
@@ -278,7 +278,11 @@ c_ws_handshake::create( const char *host, const char *origin, const char *channe
     request << "Connection: Upgrade\r\n";
     request << "Sec-WebSocket-Key: " << b64 << "\r\n";
     request << "Sec-WebSocket-Version: 13\r\n";
-    request << "Sec-WebSocket-Extensions: permessage-deflate\r\n";
+
+    if ( extensions && extensions->permessage_deflate.enabled )
+    {
+        *output << "Sec-WebSocket-Extensions: permessage-deflate; client_max_window_bits=" << static_cast< int >( extensions->permessage_deflate.window_bits ) << "\r\n";
+    }
 
     if ( origin )
     {
@@ -298,7 +302,7 @@ c_ws_handshake::create( const char *host, const char *origin, const char *channe
 }
 
 c_ws_handshake::e_status
-c_ws_handshake::client( const char *accept_key, const c_byte_stream *input, c_byte_stream *output )
+c_ws_handshake::client( const char *accept_key, const c_byte_stream *input, c_byte_stream *output, ws_extensions_t *extensions )
 {
     if ( !output )
     {
@@ -383,11 +387,53 @@ c_ws_handshake::client( const char *accept_key, const c_byte_stream *input, c_by
         return error;
     }
 
+    if ( header.find( "Sec-WebSocket-Extensions" ) != header.end() )
+    {
+        const std::string header_extensions = header.at( "Sec-WebSocket-Extensions" );
+
+        // check if permessage-deflate is enabled
+        if ( header_extensions.find( "permessage-deflate" ) != std::string::npos )
+        {
+            // look for client_max_window_bits
+            const size_t pos = header_extensions.find( "server_max_window_bits" );
+            if ( pos != std::string::npos )
+            {
+                // find the '=' after "client_max_window_bits" and parse the number after it
+                const size_t equals_pos = header_extensions.find( '=', pos );
+                if ( equals_pos != std::string::npos )
+                {
+                    // extract and convert the window bits value
+                    int client_max_window_bits = 0;
+
+                    try
+                    {
+                        client_max_window_bits = std::stoi( header_extensions.substr( equals_pos + 1 ) );
+                    }
+                    catch ( ... )
+                    {
+                        respond( 400, "Bad Request", output );
+                    }
+
+                    // store the extracted value if client_extensions is available
+                    if ( extensions )
+                    {
+                        extensions->permessage_deflate.window_bits = client_max_window_bits;
+                    }
+                }
+            }
+
+            if ( extensions )
+            {
+                extensions->permessage_deflate.enabled = true;
+            }
+        }
+    }
+
     return ok;
 }
 
 c_ws_handshake::e_status
-c_ws_handshake::server( const char *host, const char *origin, const c_byte_stream *input, c_byte_stream *output, bool& ext_permessage_deflate, size_t& ext_permessage_deflate_window_size )
+c_ws_handshake::server( const char *host, const char *origin, const c_byte_stream *input, c_byte_stream *output, const ws_extensions_t *server_extensions, ws_extensions_t *client_extensions )
 {
     if ( !output )
     {
@@ -509,21 +555,53 @@ c_ws_handshake::server( const char *host, const char *origin, const c_byte_strea
         speak, ordered by preference.
     */
 
-    // todo: [optional] verify |Sec-WebSocket-Extensions| header field
-    /*
-        Optionally, a |Sec-WebSocket-Extensions| header field, with a
-        list of values indicating which extensions the client would like
-        to speak.  The interpretation of this header field is discussed
-        in Section 9.1.
-    */
-    bool is_ext_permessage_deflate = false;
-
     if ( header.find( "Sec-WebSocket-Extensions" ) != header.end() )
     {
-        const std::string extensions = header[ "Sec-WebSocket-Extensions" ];
-        if ( extensions.find( "permessage-deflate" ) != std::string::npos )
+        const std::string header_extensions = header.at( "Sec-WebSocket-Extensions" );
+
+        // check if permessage-deflate is enabled
+        if ( header_extensions.find( "permessage-deflate" ) != std::string::npos )
         {
-            is_ext_permessage_deflate = true;
+            // look for client_max_window_bits
+            const size_t pos = header_extensions.find( "client_max_window_bits" );
+            if ( pos != std::string::npos )
+            {
+                // find the '=' after "client_max_window_bits" and parse the number after it
+                const size_t equals_pos = header_extensions.find( '=', pos );
+                if ( equals_pos != std::string::npos )
+                {
+                    // extract and convert the window bits value
+                    int client_max_window_bits = 0;
+
+                    try
+                    {
+                        client_max_window_bits = std::stoi( header_extensions.substr( equals_pos + 1 ) );
+                    }
+                    catch ( ... )
+                    {
+                        respond( 400, "Bad Request", output );
+                    }
+
+                    // store the extracted value if client_extensions is available
+                    if ( client_extensions )
+                    {
+                        client_extensions->permessage_deflate.window_bits = client_max_window_bits;
+                    }
+                }
+            }
+
+            // set the enabled flag based on server capabilities
+            if ( client_extensions )
+            {
+                if ( server_extensions )
+                {
+                    client_extensions->permessage_deflate.enabled = server_extensions->permessage_deflate.enabled;
+                }
+                else
+                {
+                    client_extensions->permessage_deflate.enabled = false;
+                }
+            }
         }
     }
 
@@ -542,15 +620,19 @@ c_ws_handshake::server( const char *host, const char *origin, const c_byte_strea
     *output << "Connection: Upgrade\r\n";
     *output << "Sec-WebSocket-Accept: " << accept.c_str() << "\r\n";
 
-    if ( is_ext_permessage_deflate )
+    if ( client_extensions && client_extensions->permessage_deflate.enabled )
     {
-        *output << "Sec-WebSocket-Extensions: permessage-deflate\r\n";
+        if ( server_extensions && server_extensions->permessage_deflate.window_bits != client_extensions->permessage_deflate.window_bits )
+        {
+            *output << "Sec-WebSocket-Extensions: permessage-deflate; server_max_window_bits=" << static_cast< int >( server_extensions->permessage_deflate.window_bits ) << "\r\n";
+        }
+        else
+        {
+            *output << "Sec-WebSocket-Extensions: permessage-deflate\r\n";
+        }
     }
 
     *output << "\r\n";
-
-    ext_permessage_deflate = is_ext_permessage_deflate;
-    ext_permessage_deflate_window_size = 15;
 
     return ok;
 }

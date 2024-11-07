@@ -77,7 +77,7 @@ struct c_ws_frame::impl_t
     encode( e_ws_frame_opcode opcode, bool mask, unsigned char *mask_key, size_t window_size, const c_byte_stream *input, const c_byte_stream *output );
 
     static e_ws_frame_status
-    decode( const c_byte_stream *input, const c_byte_stream *output, e_ws_frame_opcode &opcode );
+    decode( const c_byte_stream *input, const c_byte_stream *output, e_ws_frame_opcode &opcode, size_t window_size );
 
     impl_t()
     {
@@ -254,7 +254,7 @@ c_ws_frame::read( const c_byte_stream *input ) const
 {
     e_ws_frame_opcode out_opcode = opcode_binary;
 
-    const e_ws_frame_status status = impl_t::decode( input, &impl->payload, out_opcode );
+    const e_ws_frame_status status = impl_t::decode( input, &impl->payload, out_opcode, impl->window_size );
 
     impl->opcode = out_opcode;
 
@@ -273,7 +273,7 @@ c_ws_frame::impl_t::encode( const e_ws_frame_opcode opcode, const bool mask, uns
     {
         const c_byte_stream deflated;
 
-        if ( c_flate::deflate( input, &deflated, 15 ) != c_flate::e_status::status_ok )
+        if ( c_flate::deflate( input, &deflated, window_size ) != c_flate::e_status::status_ok )
         {
             return e_ws_frame_status::status_ok;
         }
@@ -392,7 +392,7 @@ c_ws_frame::impl_t::encode( const e_ws_frame_opcode opcode, const bool mask, uns
 }
 
 e_ws_frame_status
-c_ws_frame::impl_t::decode( const c_byte_stream *input, const c_byte_stream *output, e_ws_frame_opcode &opcode )
+c_ws_frame::impl_t::decode( const c_byte_stream *input, const c_byte_stream *output, e_ws_frame_opcode &opcode, const size_t window_size )
 {
     if ( !input || !output )
     {
@@ -526,7 +526,7 @@ c_ws_frame::impl_t::decode( const c_byte_stream *input, const c_byte_stream *out
                 return e_ws_frame_status::status_error;
             }
 
-            if ( c_flate::inflate( &inflate_input, output, 15 ) != c_flate::e_status::status_ok )
+            if ( c_flate::inflate( &inflate_input, output, window_size ) != c_flate::e_status::status_ok )
             {
                 return e_ws_frame_status::status_error;
             }

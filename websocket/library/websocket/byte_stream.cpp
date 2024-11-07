@@ -28,6 +28,8 @@ SOFTWARE.
 #include <mutex>
 #include <vector>
 
+#include <bits/charconv.h>
+
 struct c_byte_stream::impl_t
 {
     mutable std::recursive_mutex mutex;
@@ -208,6 +210,24 @@ c_byte_stream::operator<<( unsigned char *value )
 {
     const size_t size = std::strlen( reinterpret_cast< const char * >( value ) );
     push_back( value, size );
+    return *this;
+}
+
+c_byte_stream &
+c_byte_stream::operator<<( const int value )
+{
+    const bool neg = value < 0;
+    const auto uval = neg ? static_cast< unsigned >( ~value ) + 1u : value;
+    const auto len = std::__detail::__to_chars_len( uval );
+
+    const auto first = new char[ len ];
+
+    std::__detail::__to_chars_10_impl( &first[ neg ], len, uval );
+
+    push_back( reinterpret_cast< unsigned char * >( first ), neg + len );
+
+    delete[] first;
+
     return *this;
 }
 

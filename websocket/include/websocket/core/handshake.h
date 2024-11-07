@@ -28,6 +28,8 @@ SOFTWARE.
 
 #include <string>
 
+#include <websocket/defs/socketDefs.h>
+
 /** \cond */
 class c_ws_handshake final
 {
@@ -46,15 +48,15 @@ public:
     random( size_t count, std::string &output );
 
     static e_status
-    secret( const std::string& input, std::string &output );
+    secret( const std::string &input, std::string &output );
 
     static e_status
-    create( const char *host, const char *origin, const char *channel, const c_byte_stream *output, std::string &out_accept_key );
+    create( const char *host, const char *origin, const char *channel, c_byte_stream *output, std::string &out_accept_key, const ws_extensions_t *extensions );
 
     static e_status
-    client( const char *accept_key, const c_byte_stream *input, c_byte_stream *output );
+    client( const char *accept_key, const c_byte_stream *input, c_byte_stream *output, ws_extensions_t *extensions );
 
     static e_status
-    server( const char *host, const char *origin, const c_byte_stream *input, c_byte_stream *output, bool& ext_permessage_deflate, size_t& ext_permessage_deflate_window_size );
+    server( const char *host, const char *origin, const c_byte_stream *input, c_byte_stream *output, const ws_extensions_t *server_extensions, ws_extensions_t *client_extensions );
 };
 /** \endcond */

@@ -70,6 +70,9 @@ public:
     c_byte_stream &
     operator<<( unsigned char *value );
 
+    c_byte_stream &
+    operator<<( int value );
+
     void
     close() const;
 
@@ -184,7 +187,7 @@ public:
     size_t
     size() const;
 
-    std::vector< unsigned char >*
+    std::vector< unsigned char > *
     container() const;
 
     bool

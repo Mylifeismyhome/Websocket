@@ -147,13 +147,12 @@ struct file_descriptor_context
 
     c_ws_frame frame;
 
+    ws_extensions_t extensions{};
+
     mbedtls_timing_delay_context timer_ping_ctx{};
     mbedtls_timing_delay_context timer_ping_pong_ctx{};
 
     e_ws_closure_status closure_status; /**< closure reason for file descriptor. */
-
-    bool ex_permessage_deflate;
-    size_t ex_permessage_deflate_window_size;
 
     file_descriptor_context();
 
@@ -191,6 +190,8 @@ struct c_websocket::impl_t
     std::map< int, file_descriptor_context > fd_map;
 
     e_ws_endpoint_type endpoint;
+
+    ws_extensions_t extensions{};
 
     std::string host;
     std::string allowed_origin;
@@ -274,6 +275,9 @@ impl_t()
     ping_timeout = 30 * 1000;
 
     message_limit = 4 * 1024 * 1024; // 4 mb in bytes
+
+    extensions.permessage_deflate.enabled = false;
+    extensions.permessage_deflate.window_bits = 15;
 }
 
 c_websocket::impl_t::~
@@ -462,8 +466,8 @@ file_descriptor_context()
 
     closure_status = closure_no_status_received;
 
-    ex_permessage_deflate = false;
-    ex_permessage_deflate_window_size = 0;
+    extensions.permessage_deflate.enabled = false;
+    extensions.permessage_deflate.window_bits = 15;
 }
 
 file_descriptor_context::~
@@ -604,6 +608,8 @@ c_websocket::impl_t::setup( const ws_settings_t *settings )
 
     message_limit = settings->message_limit;
 
+    extensions = settings->extensions;
+
     return status_ok;
 }
 
@@ -718,7 +724,7 @@ c_websocket::impl_t::communicate( file_descriptor_context *ctx )
 
             case endpoint_client:
             {
-                if ( c_ws_handshake::create( host.c_str(), allowed_origin.c_str(), "/", &ctx->stream.output, ctx->sec_websocket_accept ) != c_ws_handshake::e_status::ok )
+                if ( c_ws_handshake::create( host.c_str(), allowed_origin.c_str(), "/", &ctx->stream.output, ctx->sec_websocket_accept, &extensions ) != c_ws_handshake::e_status::ok )
                 {
                     close( ctx, closure_protocol_error );
                     return;
@@ -783,11 +789,11 @@ c_websocket::impl_t::communicate( file_descriptor_context *ctx )
                                 switch ( endpoint )
                                 {
                                     case endpoint_server:
-                                        status_handshake = c_ws_handshake::server( host.c_str(), allowed_origin.c_str(), &ctx->stream.input, &ctx->stream.output, ctx->ex_permessage_deflate, ctx->ex_permessage_deflate_window_size );
+                                        status_handshake = c_ws_handshake::server( host.c_str(), allowed_origin.c_str(), &ctx->stream.input, &ctx->stream.output, &extensions, &ctx->extensions );
                                         break;
 
                                     case endpoint_client:
-                                        status_handshake = c_ws_handshake::client( ctx->sec_websocket_accept.c_str(), &ctx->stream.input, &ctx->stream.output );
+                                        status_handshake = c_ws_handshake::client( ctx->sec_websocket_accept.c_str(), &ctx->stream.input, &ctx->stream.output, &ctx->extensions );
                                         break;
 
                                     default:
@@ -803,6 +809,11 @@ c_websocket::impl_t::communicate( file_descriptor_context *ctx )
 
                                     case status_ok:
                                     {
+                                        if ( ctx->extensions.permessage_deflate.enabled )
+                                        {
+                                            ctx->frame.deflate( ctx->extensions.permessage_deflate.window_bits );
+                                        }
+
                                         ctx->ws_con_state = e_ws_con_state::open;
 
                                         ctx->timer_ping( ping_interval );
@@ -1401,9 +1412,9 @@ c_websocket::emit( const int fd, const c_ws_frame *frame ) const
         return status_error;
     }
 
-    if(ctx->ex_permessage_deflate)
+    if ( ctx->extensions.permessage_deflate.enabled )
     {
-        frame->deflate( ctx->ex_permessage_deflate_window_size );
+        frame->deflate( ctx->extensions.permessage_deflate.window_bits );
     }
 
     if ( frame->write( &ctx->stream.output ) != e_ws_frame_status::status_ok )

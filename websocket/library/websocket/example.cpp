@@ -154,6 +154,8 @@ main()
 
     ws_settings_init( &settings );
 
+    settings.extensions.permessage_deflate.enabled = true;
+
 #ifdef WEBSOCKET_EXAMPLE_ENDPOINT_SERVER
     settings.endpoint = endpoint_server;
 #elif WEBSOCKET_EXAMPLE_ENDPOINT_CLIENT
