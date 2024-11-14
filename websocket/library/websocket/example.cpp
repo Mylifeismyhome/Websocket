@@ -35,7 +35,7 @@ handle_exit()
 
     while ( websocket_operate( ctx ) )
     {
-        // keep operating till all fd's has been terminated
+        // keep operating till all fd's have been terminated
     }
 
     websocket_destroy( ctx );
@@ -44,7 +44,7 @@ handle_exit()
 
     while ( ws.operate() )
     {
-        // keep operating till all fd's has been terminated
+        // keep operating till all fd's have been terminated
     }
 #endif
 
