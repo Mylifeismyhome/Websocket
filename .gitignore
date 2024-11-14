@@ -187,3 +187,5 @@ publish/
 *.rptproj.bak
 doc/
 test.html
+
+.clang-format
