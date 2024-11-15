@@ -269,6 +269,14 @@ c_ws_frame::impl_t::encode( const e_ws_frame_opcode opcode, const bool mask, uns
         return e_ws_frame_status::status_error;
     }
 
+    if ( opcode == opcode_text )
+    {
+        if ( input->to_utf8() != c_byte_stream::e_status::ok )
+        {
+            return e_ws_frame_status::status_error;
+        }
+    }
+
     if ( window_size != 0 )
     {
         const c_byte_stream deflated;
@@ -545,7 +553,19 @@ c_ws_frame::impl_t::decode( const c_byte_stream *input, const c_byte_stream *out
         return e_ws_frame_status::status_error;
     }
 
-    opcode = static_cast< e_ws_frame_opcode >( byte1.bits.opcode );
+    const e_ws_frame_status status = byte1.bits.fin ? e_ws_frame_status::status_final : e_ws_frame_status::status_fragment;
 
-    return byte1.bits.fin ? e_ws_frame_status::status_final : e_ws_frame_status::status_fragment;
+    if ( status == e_ws_frame_status::status_final )
+    {
+        if ( opcode == opcode_text )
+        {
+            if ( !output->is_utf8() )
+            {
+                output->flush();
+                return e_ws_frame_status::status_invalid_data;
+            }
+        }
+    }
+
+    return status;
 }

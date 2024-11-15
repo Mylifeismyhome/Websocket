@@ -196,6 +196,9 @@ public:
     bool
     is_utf8() const;
 
+    e_status
+    to_utf8() const;
+
 private:
     struct impl_t;
     impl_t *impl;

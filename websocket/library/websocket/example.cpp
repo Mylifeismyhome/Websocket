@@ -98,7 +98,7 @@ websocket_on_close( void *ctx, const int fd, const e_ws_closure_status status )
 void
 websocket_on_frame( void *ctx, const int fd, const e_ws_frame_opcode opcode, const unsigned char *payload, const size_t size )
 {
-    printf( "income frame `%i` :: opcode -> %d\n\t%s\n", fd, opcode, reinterpret_cast< const char * >( payload ) );
+    printf( "income frame `%i` :: opcode -> %d\n\t%.*s\n", fd, opcode, static_cast< int >( size ), reinterpret_cast< const char * >( payload ) );
 }
 
 void
@@ -128,7 +128,7 @@ websocket_on_close( void *ctx, const int fd, const e_ws_closure_status status )
 void
 websocket_on_frame( void *ctx, const int fd, const e_ws_frame_opcode opcode, const unsigned char *payload, const size_t size )
 {
-    printf( "income frame `%i` :: opcode -> %d\n\t%s\n", fd, opcode, reinterpret_cast< const char * >( payload ) );
+    printf( "income frame `%i` :: opcode -> %d\n\t%.*s\n", fd, opcode, static_cast< int >( size ), reinterpret_cast< const char * >( payload ) );
 }
 
 void

@@ -94,6 +94,9 @@ struct c_byte_stream::impl_t
 
     bool
     is_utf8() const;
+
+    e_status
+    to_utf8();
 };
 
 bool
@@ -633,6 +636,106 @@ c_byte_stream::impl_t::is_utf8() const
 }
 
 c_byte_stream::e_status
+c_byte_stream::impl_t::to_utf8()
+{
+    if ( container.empty() )
+    {
+        return e_status::error;
+    }
+
+    size_t i = 0;
+
+    const size_t len = container.size();
+    std::vector< unsigned char > utf8;
+
+    while ( i < len )
+    {
+        const unsigned char c = container[ i ];
+        int n = 0;
+
+        if ( c <= 0x7F )
+        {
+            // 1-byte ASCII
+
+            try
+            {
+                utf8.push_back( c );
+            }
+            catch ( const std::bad_alloc & )
+            {
+                return e_status::out_of_memory;
+            }
+            catch ( ... )
+            {
+                return e_status::error;
+            }
+
+            ++i;
+        }
+        else if ( ( c & 0xE0 ) == 0xC0 )
+        {
+            // 2-byte sequence
+            n = 1;
+        }
+        else if ( ( c & 0xF0 ) == 0xE0 )
+        {
+            // 3-byte sequence
+            n = 2;
+        }
+        else if ( ( c & 0xF8 ) == 0xF0 )
+        {
+            // 4-byte sequence
+            n = 3;
+        }
+        else
+        {
+            return e_status::error; // invalid start byte
+        }
+
+        // check if enough continuation bytes exist
+        if ( i + n >= len )
+        {
+            return e_status::error; // truncated sequence
+        }
+
+        for ( int j = 1; j <= n; ++j )
+        {
+            if ( ( container[ i + j ] & 0xC0 ) != 0x80 )
+            {
+                return e_status::error; // invalid continuation byte
+            }
+        }
+
+        // append valid sequence
+        for ( int j = 0; j <= n; ++j )
+        {
+            try
+            {
+                utf8.push_back( container[ i + j ] );
+            }
+            catch ( const std::bad_alloc & )
+            {
+                return e_status::out_of_memory;
+            }
+            catch ( ... )
+            {
+                return e_status::error;
+            }
+        }
+
+        i += n + 1;
+    }
+
+    flush();
+
+    // replace container content with converted utf-8 data
+    container = std::move( utf8 );
+
+    return e_status::ok;
+}
+
+
+c_byte_stream::e_status
 c_byte_stream::push( unsigned char value ) const
 {
     impl->wait_lock();
@@ -1118,4 +1221,10 @@ bool
 c_byte_stream::is_utf8() const
 {
     return impl->is_utf8();
+}
+
+c_byte_stream::e_status
+c_byte_stream::to_utf8() const
+{
+    return impl->to_utf8();
 }

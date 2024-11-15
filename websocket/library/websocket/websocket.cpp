@@ -902,6 +902,12 @@ c_websocket::impl_t::communicate( file_descriptor_context *ctx )
                                         break;
                                     }
 
+                                    case e_ws_frame_status::status_invalid_data:
+                                    {
+                                        close( ctx, closure_invalid_data );
+                                        return;
+                                    }
+
                                     case e_ws_frame_status::status_final:
                                     {
                                         const e_ws_frame_opcode opcode = ctx->frame.get_opcode();
@@ -909,18 +915,6 @@ c_websocket::impl_t::communicate( file_descriptor_context *ctx )
                                         switch ( opcode )
                                         {
                                             case opcode_text:
-                                            {
-                                                if ( !ctx->frame.is_payload_utf8() )
-                                                {
-                                                    close( ctx, closure_invalid_data );
-                                                    return;
-                                                }
-
-                                                std::thread( &impl_t::async_ws_frame, this, ctx->net.fd, std::move( ctx->frame ) ).detach();
-                                                ctx->frame = {};
-                                                break;
-                                            }
-
                                             case opcode_binary:
                                             {
                                                 std::thread( &impl_t::async_ws_frame, this, ctx->net.fd, std::move( ctx->frame ) ).detach();
