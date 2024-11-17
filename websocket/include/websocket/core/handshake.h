@@ -41,9 +41,6 @@ public:
         busy = 0x2 /**< the socket is currently busy. */
     };
 
-    static void
-    respond( int status_code, const char *message, c_byte_stream *output );
-
     static e_status
     random( size_t count, std::string &output );
 

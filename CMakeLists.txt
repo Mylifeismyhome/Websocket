@@ -135,6 +135,7 @@ set(CORE
     websocket/library/websocket/flate.cpp
     websocket/library/websocket/byte_stream.cpp
 	websocket/library/websocket/endian.cpp
+	websocket/library/websocket/http.cpp
 	websocket/library/websocket/handshake.cpp
     websocket/library/websocket/frame.cpp
 	websocket/library/websocket/websocket.cpp

@@ -73,6 +73,9 @@ public:
     c_byte_stream &
     operator<<( int value );
 
+    c_byte_stream &
+    operator<<( unsigned int value );
+
     void
     close() const;
 
@@ -155,34 +158,34 @@ public:
     flush_async() const;
 
     int
-    compare( const unsigned char *pattern, size_t size, size_t offset = 0 ) const;
+    compare( const unsigned char *pattern, size_t size, size_t offset = 0, size_t end = npos ) const;
 
     int
-    compare_async( const unsigned char *pattern, size_t size, size_t offset = 0 ) const;
+    compare_async( const unsigned char *pattern, size_t size, size_t offset = 0, size_t end = npos ) const;
 
     size_t
-    index_of( int val, size_t offset = 0 ) const;
+    index_of( int val, size_t offset = 0, size_t end = npos ) const;
 
     size_t
-    index_of_async( int val, size_t offset = 0 ) const;
+    index_of_async( int val, size_t offset = 0, size_t end = npos ) const;
 
     size_t
-    index_of( const unsigned char *pattern, size_t size, size_t offset = 0 ) const;
+    index_of( const unsigned char *pattern, size_t size, size_t offset = 0, size_t end = npos ) const;
 
     size_t
-    index_of_async( const unsigned char *pattern, size_t size, size_t offset = 0 ) const;
+    index_of_async( const unsigned char *pattern, size_t size, size_t offset = 0, size_t end = npos ) const;
 
     size_t
-    index_of_back( int val, size_t offset = 0 ) const;
+    index_of_back( int val, size_t offset = 0, size_t end = npos ) const;
 
     size_t
-    index_of_back_async( int val, size_t offset = 0 ) const;
+    index_of_back_async( int val, size_t offset = 0, size_t end = npos ) const;
 
     size_t
-    index_of_back( const unsigned char *pattern, size_t size, size_t offset = 0 ) const;
+    index_of_back( const unsigned char *pattern, size_t size, size_t offset = 0, size_t end = npos ) const;
 
     size_t
-    index_of_back_async( const unsigned char *pattern, size_t size, size_t offset = 0 ) const;
+    index_of_back_async( const unsigned char *pattern, size_t size, size_t offset = 0, size_t end = npos ) const;
 
     size_t
     size() const;
