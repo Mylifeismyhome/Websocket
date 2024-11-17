@@ -251,7 +251,7 @@ c_ws_handshake::client( const char *accept_key, const c_byte_stream *input, c_by
     }
 
     c_http http;
-    if ( !c_http::parse( input, http ) )
+    if ( c_http::parse( input, http ) != c_http::e_status::ok )
     {
         c_http::respond( c_http::e_status_code::http_status_code_bad_request, output );
         return error;
@@ -374,7 +374,7 @@ c_ws_handshake::server( const char *host, const char *origin, const c_byte_strea
     }
 
     c_http http;
-    if ( !c_http::parse( input, http ) )
+    if ( c_http::parse( input, http ) != c_http::e_status::ok )
     {
         c_http::respond( c_http::e_status_code::http_status_code_bad_request, output );
         return error;

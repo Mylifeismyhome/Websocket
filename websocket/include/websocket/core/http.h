@@ -26,7 +26,6 @@ SOFTWARE.
 
 #include <websocket/core/byte_stream.h>
 
-#include <cstdint>
 #include <map>
 #include <string>
 
@@ -41,7 +40,7 @@ public:
      * This enum defines the various HTTP request methods such as GET, POST, PUT, DELETE, etc.
      * Each method is assigned a unique `uint8_t` value for efficient storage and comparison.
      */
-    enum class e_method : uint8_t
+    enum class e_method : unsigned char
     {
         http_method_unknown = 0x0, /**< Unknown HTTP method. */
         http_method_get = 0x1, /**< HTTP GET method, used to retrieve data from the server. */
@@ -62,7 +61,7 @@ public:
      * This enum defines the various versions of HTTP supported, including HTTP/1.0, HTTP/1.1, HTTP/2, and HTTP/3.
      * Each version is assigned a unique `uint8_t` value.
      */
-    enum class e_version : uint8_t
+    enum class e_version : unsigned char
     {
         http_version_unknown = 0, /**< Unknown HTTP version. */
         http_version_1_0 = 1, /**< HTTP/1.0 - The first version of HTTP, introduced basic communication. */
@@ -75,7 +74,7 @@ public:
      * @enum e_status_code
      * @brief Enum class representing HTTP status codes.
      */
-    enum class e_status_code : uint32_t
+    enum class e_status_code : unsigned int
     {
         // 1xx informational
         http_status_code_continue = 100, /**< The server has received the request headers and the client should proceed to send the request body. */
@@ -150,6 +149,22 @@ public:
         http_status_code_network_authentication_required = 511 /**< The client needs to authenticate to gain network access. */
     };
 
+    /**
+     * @brief Enum class representing HTTP parsing statuses.
+     *
+     * Indicates the result of HTTP parsing operations, providing detailed
+     * error codes for specific parsing failures.
+     */
+    enum class e_status : unsigned char
+    {
+        ok = 0x0, /**< Parsing succeeded with no errors. */
+        error = 0x1, /**< A general error occurred during parsing. */
+        no_http_format = 0x2, /**< No valid HTTP request or response format detected. */
+        no_http_header = 0x3, /**< The HTTP header is incomplete (missing CRLF or other expected components). */
+        no_http_version = 0x4, /**< The HTTP version is missing or not specified. */
+        no_valid_http_status_code = 0x5 /**< The status code in the HTTP message is not a valid integer. */
+    };
+
 private:
     e_method method;
     std::string resource;
@@ -186,7 +201,7 @@ public:
     const c_byte_stream &
     get_body() const;
 
-    static bool
+    static e_status
     parse( const c_byte_stream *input, c_http &http );
 
     static void

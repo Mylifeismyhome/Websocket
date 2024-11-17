@@ -141,12 +141,12 @@ c_http::get_body() const
     return body;
 }
 
-bool
+c_http::e_status
 c_http::parse( const c_byte_stream *input, c_http &http )
 {
     if ( !input || !input->available() )
     {
-        return false;
+        return e_status::error;
     }
 
     size_t pos = 0, offset = 0;
@@ -163,7 +163,7 @@ c_http::parse( const c_byte_stream *input, c_http &http )
     const size_t header_len = input->index_of( reinterpret_cast< const unsigned char * >( "\r\n\r\n" ), 4 );
     if ( header_len == c_byte_stream::npos )
     {
-        return false;
+        return e_status::no_http_header;
     }
 
     // meta data
@@ -178,7 +178,7 @@ c_http::parse( const c_byte_stream *input, c_http &http )
 
         if ( !std::regex_match( begin, end, matches, rgx ) )
         {
-            return false;
+            return e_status::no_http_format;
         }
 
         if ( matches[ 1 ].matched )
@@ -196,18 +196,16 @@ c_http::parse( const c_byte_stream *input, c_http &http )
 
         if ( !matches[ 3 ].matched )
         {
-            return false;
+            return e_status::no_http_version;
         }
 
         std::string tmp( "HTTP/" );
         tmp += matches[ 3 ].str();
 
-        if ( versions.find( tmp ) == versions.end() )
+        if ( versions.find( tmp ) != versions.end() )
         {
-            return false;
+            version = versions.at( tmp );
         }
-
-        version = versions.at( tmp );
 
         if ( matches[ 5 ].matched )
         {
@@ -219,7 +217,7 @@ c_http::parse( const c_byte_stream *input, c_http &http )
             }
             catch ( ... )
             {
-                return false;
+                return e_status::no_valid_http_status_code;
             }
 
             status_code = static_cast< e_status_code >( ival );
@@ -234,7 +232,7 @@ c_http::parse( const c_byte_stream *input, c_http &http )
     }
     else
     {
-        return false;
+        return e_status::no_http_header;
     }
 
     // header fields
@@ -244,7 +242,7 @@ c_http::parse( const c_byte_stream *input, c_http &http )
 
         if ( pos_col == c_byte_stream::npos )
         {
-            return false;
+            return e_status::error;
         }
 
         std::string key;
@@ -255,12 +253,12 @@ c_http::parse( const c_byte_stream *input, c_http &http )
 
         if ( input->copy( reinterpret_cast< unsigned char * >( &key[ 0 ] ), pos_col - offset, nullptr, offset ) != c_byte_stream::e_status::ok )
         {
-            return false;
+            return e_status::error;
         }
 
         if ( input->copy( reinterpret_cast< unsigned char * >( &value[ 0 ] ), pos - pos_col, nullptr, pos_col + 1 ) != c_byte_stream::e_status::ok )
         {
-            return false;
+            return e_status::error;
         }
 
         auto trim = []( const std::string &s ) -> std::string
@@ -286,7 +284,7 @@ c_http::parse( const c_byte_stream *input, c_http &http )
         body.resize( body_len );
         if ( input->copy( body.pointer( 0 ), body_len, nullptr, header_len + 4 ) != c_byte_stream::e_status::ok )
         {
-            return false;
+            return e_status::error;
         }
     }
 
@@ -298,7 +296,7 @@ c_http::parse( const c_byte_stream *input, c_http &http )
     http.headers = std::move( headers );
     http.body = std::move( body );
 
-    return true;
+    return e_status::ok;
 }
 
 void
@@ -316,7 +314,7 @@ c_http::respond( e_status_code status_code, c_byte_stream *output )
         reason = status_code_reasons.at( status_code );
     }
 
-    *output << "HTTP/1.1 " << static_cast< uint32_t >( status_code ) << " " << reason.c_str() << "\r\n";
+    *output << "HTTP/1.1 " << static_cast< unsigned int >( status_code ) << " " << reason.c_str() << "\r\n";
     *output << "Content-Length: 0\r\n";
     *output << "Connection: close\r\n";
     *output << "\r\n";
