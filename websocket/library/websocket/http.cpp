@@ -166,16 +166,17 @@ c_http::parse( const c_byte_stream *input, c_http &http )
         return false;
     }
 
-    // parse first line of request with method, resource and version
+    // meta data
     if ( ( pos = input->index_of( reinterpret_cast< const unsigned char * >( "\r\n" ), 2, offset, header_len + 2 ) ) != c_byte_stream::npos )
     {
-        const std::string str( reinterpret_cast< const char * >( input->pointer( offset ) ), pos );
+        const auto begin = reinterpret_cast< const char * >( input->pointer( offset ) );
+        const char *end = begin + pos;
 
         const std::regex rgx( R"(^(GET|POST|PUT|DELETE|HEAD|OPTIONS|PATCH|CONNECT|TRACE)\s+([^\s]+)\s+HTTP/(\d+\.\d+)(\s+(\d{3})\s+([^\r\n]*))?$)" );
 
-        std::smatch matches;
+        std::match_results< const char * > matches;
 
-        if ( !std::regex_match( str, matches, rgx ) )
+        if ( !std::regex_match( begin, end, matches, rgx ) )
         {
             return false;
         }
@@ -236,7 +237,7 @@ c_http::parse( const c_byte_stream *input, c_http &http )
         return false;
     }
 
-    // parse header fields
+    // header fields
     while ( ( pos = input->index_of( reinterpret_cast< const unsigned char * >( "\r\n" ), 2, offset, header_len + 2 ) ) != c_byte_stream::npos )
     {
         const size_t pos_col = input->index_of( ':', offset, pos );
@@ -277,6 +278,7 @@ c_http::parse( const c_byte_stream *input, c_http &http )
         offset = pos + 1;
     }
 
+    // body
     const size_t body_len = input->size() - header_len - 4;
 
     if ( body_len != 0 )
