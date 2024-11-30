@@ -28,6 +28,56 @@ SOFTWARE.
 #include <mutex>
 #include <vector>
 
+static unsigned
+__to_chars_len( unsigned int __value, int __base = 10 ) noexcept
+{
+    unsigned __n = 1;
+    const unsigned __b2 = __base * __base;
+    const unsigned __b3 = __b2 * __base;
+    const unsigned long __b4 = __b3 * __base;
+    for ( ;; )
+    {
+        if ( __value < ( unsigned )__base )
+            return __n;
+        if ( __value < __b2 )
+            return __n + 1;
+        if ( __value < __b3 )
+            return __n + 2;
+        if ( __value < __b4 )
+            return __n + 3;
+        __value /= __b4;
+        __n += 4;
+    }
+}
+
+static void
+__to_chars_10_impl( char *__first, unsigned __len, unsigned int __val ) noexcept
+{
+    constexpr char __digits[ 201 ] =
+        "0001020304050607080910111213141516171819"
+        "2021222324252627282930313233343536373839"
+        "4041424344454647484950515253545556575859"
+        "6061626364656667686970717273747576777879"
+        "8081828384858687888990919293949596979899";
+    unsigned __pos = __len - 1;
+    while ( __val >= 100 )
+    {
+        auto const __num = ( __val % 100 ) * 2;
+        __val /= 100;
+        __first[ __pos ] = __digits[ __num + 1 ];
+        __first[ __pos - 1 ] = __digits[ __num ];
+        __pos -= 2;
+    }
+    if ( __val >= 10 )
+    {
+        auto const __num = __val * 2;
+        __first[ 1 ] = __digits[ __num + 1 ];
+        __first[ 0 ] = __digits[ __num ];
+    }
+    else
+        __first[ 0 ] = '0' + __val;
+}
+
 struct c_byte_stream::impl_t
 {
     mutable std::recursive_mutex mutex;
@@ -212,57 +262,6 @@ c_byte_stream::operator<<( unsigned char *value )
     push_back( value, size );
     return *this;
 }
-
-unsigned
-__to_chars_len( unsigned int __value, int __base = 10 ) noexcept
-{
-    unsigned __n = 1;
-    const unsigned __b2 = __base * __base;
-    const unsigned __b3 = __b2 * __base;
-    const unsigned long __b4 = __b3 * __base;
-    for ( ;; )
-    {
-        if ( __value < ( unsigned )__base )
-            return __n;
-        if ( __value < __b2 )
-            return __n + 1;
-        if ( __value < __b3 )
-            return __n + 2;
-        if ( __value < __b4 )
-            return __n + 3;
-        __value /= __b4;
-        __n += 4;
-    }
-}
-
-void
-__to_chars_10_impl( char *__first, unsigned __len, unsigned int __val ) noexcept
-{
-    constexpr char __digits[ 201 ] =
-        "0001020304050607080910111213141516171819"
-        "2021222324252627282930313233343536373839"
-        "4041424344454647484950515253545556575859"
-        "6061626364656667686970717273747576777879"
-        "8081828384858687888990919293949596979899";
-    unsigned __pos = __len - 1;
-    while ( __val >= 100 )
-    {
-        auto const __num = ( __val % 100 ) * 2;
-        __val /= 100;
-        __first[ __pos ] = __digits[ __num + 1 ];
-        __first[ __pos - 1 ] = __digits[ __num ];
-        __pos -= 2;
-    }
-    if ( __val >= 10 )
-    {
-        auto const __num = __val * 2;
-        __first[ 1 ] = __digits[ __num + 1 ];
-        __first[ 0 ] = __digits[ __num ];
-    }
-    else
-        __first[ 0 ] = '0' + __val;
-}
-
 
 c_byte_stream &
 c_byte_stream::operator<<( const int value )
