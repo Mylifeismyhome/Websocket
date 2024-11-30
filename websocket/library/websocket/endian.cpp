@@ -81,7 +81,7 @@ c_endian::little_endian_64( const unsigned long long value )
 unsigned short
 c_endian::big_endian_16( const unsigned short value )
 {
-    return is_big() ? swap_64( value ) : value;
+    return is_big() ? static_cast< unsigned short >( swap_64( value ) ) : value;
 }
 
 unsigned int

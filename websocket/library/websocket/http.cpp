@@ -85,15 +85,14 @@ static const std::map< c_http::e_status_code, std::string > status_code_reasons 
 };
 
 c_http::
-c_http()
+    c_http()
 {
     method = e_method::http_method_unknown;
     version = e_version::http_version_unknown;
     status_code = e_status_code::http_status_code_ok;
 }
 
-c_http::~
-c_http()
+c_http::~c_http()
 {
     body.close();
 }
@@ -172,7 +171,7 @@ c_http::parse( const c_byte_stream *input, c_http &http )
         const auto begin = reinterpret_cast< const char * >( input->pointer( offset ) );
         const char *end = begin + pos;
 
-        const std::regex rgx( R"(^(GET|POST|PUT|DELETE|HEAD|OPTIONS|PATCH|CONNECT|TRACE)\s+([^\s]+)\s+HTTP/(\d+\.\d+)(\s+(\d{3})\s+([^\r\n]*))?$)" );
+        const std::regex rgx( R"(^(?:(GET|POST|PUT|DELETE|HEAD|OPTIONS|PATCH|CONNECT|TRACE)\s+)?(?:([^\s]+)\s+)?HTTP/(\d+\.\d+)(?:\s+(\d{3})\s+([^\r\n]*))?$)" );
 
         std::match_results< const char * > matches;
 
@@ -207,13 +206,13 @@ c_http::parse( const c_byte_stream *input, c_http &http )
             version = versions.at( tmp );
         }
 
-        if ( matches[ 5 ].matched )
+        if ( matches[ 4 ].matched )
         {
             int ival = 0;
 
             try
             {
-                ival = std::stoi( matches[ 5 ].str() );
+                ival = std::stoi( matches[ 4 ].str() );
             }
             catch ( ... )
             {
@@ -223,9 +222,9 @@ c_http::parse( const c_byte_stream *input, c_http &http )
             status_code = static_cast< e_status_code >( ival );
         }
 
-        if ( matches[ 6 ].matched )
+        if ( matches[ 5 ].matched )
         {
-            reason = matches[ 6 ].str();
+            reason = matches[ 5 ].str();
         }
 
         offset = pos + 1;

@@ -211,7 +211,7 @@ c_ws_handshake::create( const char *host, const char *origin, const char *channe
 
     if ( extensions && extensions->permessage_deflate.enabled )
     {
-        *output << "Sec-WebSocket-Extensions: permessage-deflate; client_max_window_bits=" << static_cast< int >( extensions->permessage_deflate.window_bits ) << "\r\n";
+        request << "Sec-WebSocket-Extensions: permessage-deflate; client_max_window_bits=" << static_cast< int >( extensions->permessage_deflate.window_bits ) << "\r\n";
     }
 
     if ( origin )
