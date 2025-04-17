@@ -109,18 +109,7 @@ public:
      * @return `true` if the data is successfully added, `false` otherwise.
      */
     bool
-    push( unsigned char *data, size_t size ) const;
-
-    /**
-     * @brief Appends a null-terminated string to the WebSocket frame payload.
-     *
-     * Adds the specified string data to the frame's payload.
-     *
-     * @param[in] data Pointer to the null-terminated string to be added.
-     * @return `true` if the string is successfully added, `false` otherwise.
-     */
-    bool
-    push( const char *data ) const;
+    push(const unsigned char *data, size_t size ) const;
 
     /**
      * @brief Clears the WebSocket frame payload.

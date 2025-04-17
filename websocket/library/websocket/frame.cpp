@@ -188,16 +188,9 @@ c_ws_frame::deflate( const size_t window_size ) const
 }
 
 bool
-c_ws_frame::push( unsigned char *data, const size_t size ) const
+c_ws_frame::push(const unsigned char *data, const size_t size ) const
 {
     return impl->payload.push( data, size ) == c_byte_stream::e_status::ok;
-}
-
-bool
-c_ws_frame::push( const char *data ) const
-{
-    const size_t size = std::strlen( data );
-    return impl->payload.push( reinterpret_cast< unsigned char * >( const_cast< char * >( data ) ), size ) == c_byte_stream::e_status::ok;
 }
 
 void

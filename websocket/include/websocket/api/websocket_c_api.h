@@ -63,10 +63,7 @@ WEBSOCKET_API void
 websocket_frame_mask( void *ctx, int key );
 
 WEBSOCKET_API bool
-websocket_frame_push( void *ctx, unsigned char *data, size_t size );
-
-WEBSOCKET_API bool
-websocket_frame_push_string( void *ctx, const char *data );
+websocket_frame_push( void *ctx, const unsigned char *data, size_t size );
 
 WEBSOCKET_API void
 websocket_frame_flush( void *ctx );

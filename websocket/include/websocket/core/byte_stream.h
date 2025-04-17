@@ -83,28 +83,28 @@ public:
     resize( size_t size ) const;
 
     e_status
-    push( unsigned char value ) const;
+    push( const unsigned char value ) const;
 
     e_status
-    push_async( unsigned char value ) const;
+    push_async( const unsigned char value ) const;
 
     e_status
-    push( unsigned char *source, size_t size ) const;
+    push( const unsigned char *source, size_t size ) const;
 
     e_status
-    push_async( unsigned char *source, size_t size ) const;
+    push_async( const unsigned char *source, size_t size ) const;
 
     e_status
-    push_back( unsigned char value ) const;
+    push_back( const unsigned char value ) const;
 
     e_status
-    push_back_async( unsigned char value ) const;
+    push_back_async( const unsigned char value ) const;
 
     e_status
-    push_back( unsigned char *source, size_t size ) const;
+    push_back( const unsigned char *source, size_t size ) const;
 
     e_status
-    push_back_async( unsigned char *source, size_t size ) const;
+    push_back_async( const unsigned char *source, size_t size ) const;
 
     e_status
     pull( unsigned char *destination, size_t &size, size_t offset = 0 ) const;

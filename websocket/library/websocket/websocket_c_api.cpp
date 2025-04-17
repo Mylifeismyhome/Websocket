@@ -134,7 +134,7 @@ websocket_frame_mask( void *ctx, const int key )
 }
 
 bool
-websocket_frame_push( void *ctx, unsigned char *data, const size_t size )
+websocket_frame_push( void *ctx, const unsigned char *data, const size_t size )
 {
     if ( !ctx )
     {
@@ -142,17 +142,6 @@ websocket_frame_push( void *ctx, unsigned char *data, const size_t size )
     }
 
     return static_cast< c_ws_frame * >( ctx )->push( data, size );
-}
-
-bool
-websocket_frame_push_string( void *ctx, const char *data )
-{
-    if ( !ctx )
-    {
-        return false;
-    }
-
-    return static_cast< c_ws_frame * >( ctx )->push( data );
 }
 
 void

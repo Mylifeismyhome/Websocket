@@ -93,10 +93,10 @@ struct c_byte_stream::impl_t
     unlock() const;
 
     e_status
-    push( unsigned char *source, size_t size );
+    push( const unsigned char *source, size_t size );
 
     e_status
-    push_back( unsigned char *source, size_t size );
+    push_back( const unsigned char *source, size_t size );
 
     e_status
     pull( unsigned char *destination, size_t &size, size_t offset );
@@ -318,7 +318,7 @@ c_byte_stream::resize( const size_t size ) const
 }
 
 c_byte_stream::e_status
-c_byte_stream::impl_t::push( unsigned char *source, const size_t size )
+c_byte_stream::impl_t::push( const unsigned char *source, const size_t size )
 {
     try
     {
@@ -337,7 +337,7 @@ c_byte_stream::impl_t::push( unsigned char *source, const size_t size )
 }
 
 c_byte_stream::e_status
-c_byte_stream::impl_t::push_back( unsigned char *source, const size_t size )
+c_byte_stream::impl_t::push_back( const unsigned char *source, const size_t size )
 {
     try
     {
@@ -820,7 +820,7 @@ c_byte_stream::impl_t::to_utf8()
 
 
 c_byte_stream::e_status
-c_byte_stream::push( unsigned char value ) const
+c_byte_stream::push( const unsigned char value ) const
 {
     impl->wait_lock();
 
@@ -832,7 +832,7 @@ c_byte_stream::push( unsigned char value ) const
 }
 
 c_byte_stream::e_status
-c_byte_stream::push_async( unsigned char value ) const
+c_byte_stream::push_async( const unsigned char value ) const
 {
     if ( !impl->try_lock() )
     {
@@ -847,7 +847,7 @@ c_byte_stream::push_async( unsigned char value ) const
 }
 
 c_byte_stream::e_status
-c_byte_stream::push( unsigned char *source, const size_t size ) const
+c_byte_stream::push( const unsigned char *source, const size_t size ) const
 {
     impl->wait_lock();
 
@@ -859,7 +859,7 @@ c_byte_stream::push( unsigned char *source, const size_t size ) const
 }
 
 c_byte_stream::e_status
-c_byte_stream::push_async( unsigned char *source, const size_t size ) const
+c_byte_stream::push_async( const unsigned char *source, const size_t size ) const
 {
     if ( !impl->try_lock() )
     {
@@ -874,7 +874,7 @@ c_byte_stream::push_async( unsigned char *source, const size_t size ) const
 }
 
 c_byte_stream::e_status
-c_byte_stream::push_back( unsigned char value ) const
+c_byte_stream::push_back( const unsigned char value ) const
 {
     impl->wait_lock();
 
@@ -886,7 +886,7 @@ c_byte_stream::push_back( unsigned char value ) const
 }
 
 c_byte_stream::e_status
-c_byte_stream::push_back_async( unsigned char value ) const
+c_byte_stream::push_back_async( const unsigned char value ) const
 {
     if ( !impl->try_lock() )
     {
@@ -901,7 +901,7 @@ c_byte_stream::push_back_async( unsigned char value ) const
 }
 
 c_byte_stream::e_status
-c_byte_stream::push_back( unsigned char *source, const size_t size ) const
+c_byte_stream::push_back( const unsigned char *source, const size_t size ) const
 {
     impl->wait_lock();
 
@@ -913,7 +913,7 @@ c_byte_stream::push_back( unsigned char *source, const size_t size ) const
 }
 
 c_byte_stream::e_status
-c_byte_stream::push_back_async( unsigned char *source, const size_t size ) const
+c_byte_stream::push_back_async( const unsigned char *source, const size_t size ) const
 {
     if ( !impl->try_lock() )
     {
