@@ -13,7 +13,7 @@ This repository provides a RFC 6455–compliant WebSocket implementation with bo
 - **CMake-Based Build**  
   Easily build and integrate the library using CMake.
 
-- **[Optional] Doxygen Documentation**  
+- **Doxygen Documentation**  
   Generate comprehensive API docs with Doxygen for quick reference and onboarding.
 
 ## Supported Extensions
