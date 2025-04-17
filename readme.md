@@ -4,16 +4,16 @@ This repository provides a RFC 6455–compliant WebSocket implementation with bo
 
 ## Features
 
-- **Dual C and C++ Interfaces**  
+- **C and C++ Interfaces**
   Flexible APIs in both C and C++ to suit your projects language preferences.
 
-- **WS and WSS Support**  
+- **WS and WSS Support**
   Full support for standard WebSocket (WS) and secure WebSocket (WSS) connections, with TLS handled by mbedTLS.
 
-- **CMake-Based Build**  
-  Easily build and integrate the library using CMake’s familiar workflow.
+- **CMake-Based Build**
+  Easily build and integrate the library using CMake.
 
-- **Optional Doxygen Documentation**  
+- **Optional Doxygen Documentation**
   Generate comprehensive API docs with Doxygen for quick reference and onboarding.
 
 ## Supported Extensions
